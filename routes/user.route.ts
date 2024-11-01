@@ -1,5 +1,5 @@
 import express from 'express';
-import { registrationUser, activateUser, loginUser, logoutUser, updateAccessToken, getUserInfo } from '../controllers/user.controller';
+import { registrationUser, activateUser, loginUser, logoutUser, updateAccessToken, getUserInfo, socialAuth } from '../controllers/user.controller';
 import { authorizeRoles, isAutheticated } from '../middleware/auth';
 const userRouter = express.Router()
 
@@ -14,5 +14,7 @@ userRouter.get('/logout', isAutheticated, logoutUser);
 userRouter.get('/refresh', updateAccessToken);
 
 userRouter.get('/me', isAutheticated, getUserInfo);
+
+userRouter.post('/social-auth', socialAuth);
 
 export default userRouter;
