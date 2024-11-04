@@ -248,3 +248,56 @@ export const addAnswer = CatchAsyncError(async(req: Request, res: Response, next
         return next(new ErrorHandler(error.message,400));
     }
 })
+
+
+// add review in course
+interface IAddReviewData {
+    review: string;
+    rating: number;
+    userId: string;
+}
+export const addReview = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
+        const userCourseList= req.user?.courses;
+        const courseId = req.params.id;
+
+        // check if courseId exist in userCourseList
+        const courseExist = userCourseList?.some((course: any) => course._id.toString() == courseId.toString());
+        if (!courseExist) {
+            return next(new ErrorHandler("You are not eligible for this course",400));
+        }
+
+        const course = await CourseModel.findById(courseId);
+        const {review, rating} = req.body as IAddReviewData;
+        const reviewData: any = {
+            user: req.user,
+            comment: review,
+            rating,
+        }
+        course?.reviews.push(reviewData);
+
+        let avg = 0;
+        course?.reviews.forEach((rev: any) => {
+            avg += rev.rating;
+        });
+        
+        if (course) {
+            course.ratings = avg / course?.reviews.length;
+        }
+        
+        await course?.save();
+
+        const notification = {
+            title: "New review received",
+            message: `${req.user.name} has given a review in ${course?.name}`,
+        }
+        // create notification
+        
+        res.status(200).json({
+            success: true,
+            course
+        })
+    } catch (error) {
+        return next(new ErrorHandler(error.message,400));
+    }
+})
