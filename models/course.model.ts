@@ -1,5 +1,4 @@
 import mongoose, {Document, Model, Schema} from "mongoose";
-import { ppid } from "process";
 import { IUser } from "./user.model";
 
 interface IComment extends Document {
