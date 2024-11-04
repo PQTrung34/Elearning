@@ -292,7 +292,46 @@ export const addReview = CatchAsyncError(async(req: Request, res: Response, next
             message: `${req.user.name} has given a review in ${course?.name}`,
         }
         // create notification
-        
+
+        res.status(200).json({
+            success: true,
+            course
+        })
+    } catch (error) {
+        return next(new ErrorHandler(error.message,400));
+    }
+})
+
+// add reply in review
+interface IAddReviewReply {
+    comment: string;
+    courseId: string;
+    reviewId: string;
+}
+export const addReplyToReview = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {comment, courseId, reviewId} = req.body as IAddReviewReply;
+
+        const course = await CourseModel.findById(courseId);
+        if (!courseId) {
+            return next(new ErrorHandler("Course not found",400));
+        }
+
+        const review = course?.reviews?.find((rev: any) => rev._id.toString() === reviewId);
+        if (!review) {
+            return next(new ErrorHandler("Review not found",400));
+        }
+
+        const replyData:any = {
+            user: req.user,
+            comment,
+        };
+
+        if (!review.commentReplies) {
+            review.commentReplies = [];
+        }
+        review.commentReplies?.push(replyData);
+        await course?.save();
         res.status(200).json({
             success: true,
             course
