@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
 import ErrorHandler from "../utils/ErrorHandler";
 import cloudinary from "cloudinary";
-import { createCourse } from "../services/course.service";
+import { createCourse, getAllCoursesService } from "../services/course.service";
 import CourseModel from "../models/course.model";
 import { redis } from "../utils/redis";
 import courseRouter from "../routes/course.route";
@@ -95,7 +95,7 @@ export const getSingleCourse = CatchAsyncError(async(req: Request, res: Response
 })
 
 
-// get all course - without purchasing
+// get all courses - without purchasing
 export const getAllCourses = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
     try {
         const isCacheExist = await redis.get("allCourses");
@@ -349,6 +349,16 @@ export const addReplyToReview = CatchAsyncError(async(req: Request, res: Respons
             success: true,
             course
         })
+    } catch (error) {
+        return next(new ErrorHandler(error.message,400));
+    }
+})
+
+
+// get all courses - only for admin
+export const getAllCoursesAdmin = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
+        getAllCoursesService(res);
     } catch (error) {
         return next(new ErrorHandler(error.message,400));
     }

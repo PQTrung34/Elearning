@@ -8,7 +8,7 @@ import path from "path";
 import sendMail from "../utils/sendMail";
 import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt";
 import { redis } from "../utils/redis";
-import { getUserById } from "../services/user.service";
+import { getAllUsersService, getUserById } from "../services/user.service";
 import cloudinary from "cloudinary";
 
 // register user
@@ -346,6 +346,15 @@ export const updateProfilePicture = CatchAsyncError(async(req: Request, res: Res
             success: true,
             user,
         })
+    } catch (error) {
+        return next(new ErrorHandler(error.message,400));
+    }
+})
+
+// get all users - only for admin
+export const getAllUsersAdmin = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
+        getAllUsersService(res);
     } catch (error) {
         return next(new ErrorHandler(error.message,400));
     }
