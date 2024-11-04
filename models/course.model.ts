@@ -1,8 +1,9 @@
 import mongoose, {Document, Model, Schema} from "mongoose";
 import { ppid } from "process";
+import { IUser } from "./user.model";
 
 interface IComment extends Document {
-    user: object;
+    user: IUser;
     question: string;
     questionReplies?: IComment[];
 }
@@ -10,8 +11,8 @@ interface IComment extends Document {
 interface IReview extends Document {
     user: object;
     rating: number;
-    question: string;
-    questionReplies: IComment[];
+    comment: string;
+    commentReplies: IComment[];
 }
 
 interface ILink extends Document {
@@ -61,8 +62,8 @@ const reviewSchema = new Schema<IReview>({
         type: Number,
         default: 0,
     },
-    question: String,
-    questionReplies: [Object],
+    comment: String,
+    commentReplies: [Object],
 });
 
 const linkSchema = new Schema<ILink>({
