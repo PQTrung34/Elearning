@@ -221,7 +221,9 @@ export const addAnswer = CatchAsyncError(async(req: Request, res: Response, next
         // create new answer
         const newAnswer: any = {
             user: req.user,
-            answer
+            answer,
+            createAt: new Date().toISOString(),
+            updateAt: new Date().toISOString(),
         };
         // add answer to course content
         question.questionReplies.push(newAnswer);
@@ -338,6 +340,8 @@ export const addReplyToReview = CatchAsyncError(async(req: Request, res: Respons
         const replyData:any = {
             user: req.user,
             comment,
+            createAt: new Date().toISOString(),
+            updateAt: new Date().toISOString(),
         };
 
         if (!review.commentReplies) {

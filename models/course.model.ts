@@ -47,13 +47,14 @@ interface ICourse extends Document {
     courseData: ICourseData[];
     ratings?: number;
     purchased?: number;
+    categories: string;
 }
 
 const commentSchema = new Schema<IComment>({
     user: Object,
     question: String,
     questionReplies: [Object],
-})
+}, {timestamps: true});
 
 const reviewSchema = new Schema<IReview>({
     user: Object,
@@ -63,7 +64,7 @@ const reviewSchema = new Schema<IReview>({
     },
     comment: String,
     commentReplies: [Object],
-});
+}, {timestamps: true});
 
 const linkSchema = new Schema<ILink>({
     title: String,
@@ -81,7 +82,7 @@ const courseDataSchema = new Schema<ICourseData>({
     links: [linkSchema],
     suggestion: String,
     questions: [commentSchema],
-})
+});
 
 const courseSchema = new Schema<ICourse>({
     name: {
@@ -91,6 +92,10 @@ const courseSchema = new Schema<ICourse>({
     description: {
         type: String,
         required: true,
+    },
+    categories: {
+        type: String,
+        required: true
     },
     price: {
         type: Number,
