@@ -22,7 +22,7 @@ courseRouter.put('/add-review/:id', updateAccessToken, isAutheticated, addReview
 
 courseRouter.put('/add-reply/', updateAccessToken, isAutheticated, authorizeRoles("admin"), addReplyToReview);
 
-courseRouter.get('/get-all-courses', updateAccessToken, isAutheticated, authorizeRoles("admin"), getAllCoursesAdmin);
+courseRouter.get('/get-all-courses-admin', updateAccessToken, isAutheticated, authorizeRoles("admin"), getAllCoursesAdmin);
 
 courseRouter.delete('/delete-course/:id',updateAccessToken, isAutheticated, authorizeRoles("admin"), deleteCourse);
 
