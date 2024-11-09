@@ -32,6 +32,7 @@
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.16",
     "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "stripe": "^17.3.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"
