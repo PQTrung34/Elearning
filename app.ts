@@ -9,6 +9,7 @@ import orderRouter from "./routes/order.route";
 import notificationRouter from "./routes/notificaton.route";
 import analyticsRouter from "./routes/analytics.route";
 import layoutRouter from "./routes/layout.route";
+import { ErrorMiddleware } from "./middleware/error";
 
 // body parser
 app.use(express.json({"limit": "50mb"}));
@@ -39,3 +40,5 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
     err.statusCode = 404;
     next(err);
 });
+
+app.use(ErrorMiddleware);
