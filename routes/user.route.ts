@@ -24,9 +24,13 @@ userRouter.put('/update-user-password', updateAccessToken, isAutheticated, updat
 
 userRouter.put('/update-user-avatar', updateAccessToken, isAutheticated, updateProfilePicture)
 
-userRouter.get('/get-all-users', updateAccessToken, isAutheticated, authorizeRoles("admin"), getAllUsersAdmin);
+// userRouter.get('/get-all-users', updateAccessToken, isAutheticated, authorizeRoles("admin"), getAllUsersAdmin);
 
-userRouter.put('/update-user-role', updateAccessToken, isAutheticated, authorizeRoles("admin"), updateUserRole);
+// userRouter.put('/update-user-role', updateAccessToken, isAutheticated, authorizeRoles("admin"), updateUserRole);
+
+userRouter.get('/get-all-users', getAllUsersAdmin);
+
+userRouter.put('/update-user-role', updateUserRole);
 
 userRouter.delete('/delete-user/:id', updateAccessToken, isAutheticated, authorizeRoles("admin"), deleteUser);
 

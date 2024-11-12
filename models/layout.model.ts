@@ -40,7 +40,7 @@ const categorySchema = new Schema<Category>({
     }
 })
 
-const bannerImageSchem = new Schema<BannerImage>({
+const bannerImageSchema = new Schema<BannerImage>({
     public_id: {
         type: String
     },
@@ -56,7 +56,7 @@ const layoutSchema = new Schema<Layout>({
     faq: [faqSchema],
     categories: [categorySchema],
     banner: {
-        image: bannerImageSchem,
+        image: bannerImageSchema,
         title: {
             type: String
         },
