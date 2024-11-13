@@ -56,6 +56,7 @@ export const editCourse = CatchAsyncError(
               url: myCloud.secure_url,
             };
           }
+         
         }
       }
 
