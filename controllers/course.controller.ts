@@ -18,8 +18,8 @@ export const uploadCourse = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req.body;
-      console.log("controller")
-      console.log(data)
+      console.log('controller');
+      console.log(data);
       const thumbnail = data.thumbnail;
       if (thumbnail) {
         const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
@@ -42,18 +42,21 @@ export const editCourse = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req.body;
-      console.log(data)
       const thumbnail = data.thumbnail;
 
       if (thumbnail) {
-        await cloudinary.v2.uploader.destroy(thumbnail.public_id);
-        const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
-          folder: 'courses',
-        });
-        data.thumbnail = {
-          public_id: myCloud.public_id,
-          url: myCloud.secure_url,
-        };
+        if (thumbnail.public_id) {
+          await cloudinary.v2.uploader.destroy(thumbnail.public_id);
+          if(!thumbnail.url){
+            const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
+              folder: 'courses',
+            });
+            data.thumbnail = {
+              public_id: myCloud.public_id,
+              url: myCloud.secure_url,
+            };
+          }
+        }
       }
 
       const courseId = req.params.id;
