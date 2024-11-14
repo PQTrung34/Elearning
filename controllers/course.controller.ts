@@ -5,7 +5,6 @@ import cloudinary from 'cloudinary';
 import { createCourse, getAllCoursesService } from '../services/course.service';
 import CourseModel from '../models/course.model';
 import { redis } from '../utils/redis';
-import courseRouter from '../routes/course.route';
 import mongoose from 'mongoose';
 import path from 'path';
 import ejs from 'ejs';
@@ -153,7 +152,7 @@ export const getCourseByUser = CatchAsyncError(
         );
       }
       const course = await CourseModel.findById(courseId);
-      const content = course?.courseData;
+      const content = course?.courseContent;
       res.status(200).json({
         success: true,
         content,
@@ -180,7 +179,7 @@ export const addQuestion = CatchAsyncError(
         return next(new ErrorHandler('Invalid content id', 400));
       }
 
-      const courseContent = course?.courseData.find((item: any) =>
+      const courseContent = course?.courseContent.find((item: any) =>
         item._id.equals(contentId)
       );
       if (!courseContent) {
@@ -236,7 +235,7 @@ export const addAnswer = CatchAsyncError(
         return next(new ErrorHandler('Invalid content id', 400));
       }
 
-      const courseContent = course?.courseData.find((item: any) =>
+      const courseContent = course?.courseContent.find((item: any) =>
         item._id.equals(contentId)
       );
       if (!courseContent) {

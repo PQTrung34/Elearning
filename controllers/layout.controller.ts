@@ -3,7 +3,6 @@ import { CatchAsyncError } from '../middleware/catchAsyncError';
 import ErrorHandler from '../utils/ErrorHandler';
 import LayoutModel from '../models/layout.model';
 import cloudinary from 'cloudinary';
-import { title } from 'process';
 
 // create layout
 export const createLayout = CatchAsyncError(
