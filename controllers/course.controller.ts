@@ -46,7 +46,7 @@ export const editCourse = CatchAsyncError(
       if (thumbnail) {
         if (thumbnail.public_id) {
           await cloudinary.v2.uploader.destroy(thumbnail.public_id);
-          if(!thumbnail.url){
+          if (!thumbnail.url) {
             const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
               folder: 'courses',
             });
@@ -55,10 +55,16 @@ export const editCourse = CatchAsyncError(
               url: myCloud.secure_url,
             };
           }
-         
+        } else {
+          const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
+            folder: 'courses',
+          });
+          data.thumbnail = {
+            public_id: myCloud.public_id,
+            url: myCloud.secure_url,
+          };
         }
       }
-
       const courseId = req.params.id;
       const course = await CourseModel.findByIdAndUpdate(
         courseId,
@@ -146,9 +152,8 @@ export const getCourseByUser = CatchAsyncError(
     try {
       const userCourseList = req.user?.courses;
       const courseId = req.params.id;
-
       const courseExist = userCourseList?.find(
-        (course: any) => course._id.toString() === courseId
+        (course: any) => course.courseId.toString() === courseId
       );
       if (!courseExist) {
         return next(
@@ -182,7 +187,8 @@ export const addQuestion = CatchAsyncError(
       if (!mongoose.Types.ObjectId.isValid(contentId)) {
         return next(new ErrorHandler('Invalid content id', 400));
       }
-
+      console.log(course);
+      console.log(question, courseId, contentId);
       const courseContent = course?.courseContent.find((item: any) =>
         item._id.equals(contentId)
       );

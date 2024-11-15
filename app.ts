@@ -10,6 +10,7 @@ import notificationRouter from "./routes/notificaton.route";
 import analyticsRouter from "./routes/analytics.route";
 import layoutRouter from "./routes/layout.route";
 import { ErrorMiddleware } from "./middleware/error";
+import compilerRouter from "./routes/compiler.route";
 
 // body parser
 app.use(express.json({"limit": "50mb"}));
@@ -24,7 +25,7 @@ app.use(cors({
 }));
 
 // routes
-app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter, analyticsRouter, layoutRouter);
+app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter, analyticsRouter, layoutRouter, compilerRouter);
 
 
 // testing api
