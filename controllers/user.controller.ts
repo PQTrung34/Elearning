@@ -83,7 +83,7 @@ interface IActivationRequest {
 export const activateUser = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
     try {
         const {activation_token, activation_code} = req.body as IActivationRequest;
-
+        console.log(activation_token,activation_code)
         const newUser: {user: IUser, activationCode: string} = jwt.verify(
             activation_token, process.env.ACTIVATION_SECRET as string
         ) as {user: IUser, activationCode: string};

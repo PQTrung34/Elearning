@@ -9,6 +9,8 @@ import orderRouter from "./routes/order.route";
 import notificationRouter from "./routes/notificaton.route";
 import analyticsRouter from "./routes/analytics.route";
 import layoutRouter from "./routes/layout.route";
+import { ErrorMiddleware } from "./middleware/error";
+import compilerRouter from "./routes/compiler.route";
 
 // body parser
 app.use(express.json({"limit": "50mb"}));
@@ -18,11 +20,12 @@ app.use(cookieParser());
 
 // cors
 app.use(cors({
-    origin: process.env.ORIGIN
+    origin: process.env.ORIGIN,
+    credentials: true
 }));
 
 // routes
-app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter, analyticsRouter, layoutRouter);
+app.use("/api/v1", userRouter, courseRouter, orderRouter, notificationRouter, analyticsRouter, layoutRouter, compilerRouter);
 
 
 // testing api
@@ -39,3 +42,5 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
     err.statusCode = 404;
     next(err);
 });
+
+app.use(ErrorMiddleware);

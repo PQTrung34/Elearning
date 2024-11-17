@@ -19,9 +19,16 @@ interface ILink extends Document {
     url: string;
 }
 
+interface IQuiz extends Document {
+    time: number,
+    question: string,
+    options: Array<string>,
+    correctAnswer: number,
+}
+
 interface ICourseData extends Document {
     title: string;
-    descriptin: string;
+    description: string;
     videoUrl: string;
     videoThumbnail: object;
     videoSection: string;
@@ -30,6 +37,7 @@ interface ICourseData extends Document {
     links: ILink[];
     suggestion: string;
     questions: IComment[];
+    quiz?: IQuiz;
 }
 
 interface ICourse extends Document {
@@ -44,10 +52,11 @@ interface ICourse extends Document {
     benefits: {title: string}[];
     prerequisites: {title: string}[];
     reviews: IReview[];
-    courseData: ICourseData[];
+    courseContent: ICourseData[];
     ratings?: number;
     purchased: number;
     categories: string;
+    language?: string;
 }
 
 const commentSchema = new Schema<IComment>({
@@ -71,17 +80,25 @@ const linkSchema = new Schema<ILink>({
     url: String,
 });
 
+const quizSchema = new Schema<IQuiz>({
+    time: Number,
+    question: String,
+    options: [String],
+    correctAnswer: Number,
+})
+
 const courseDataSchema = new Schema<ICourseData>({
     videoUrl: String,
     videoThumbnail: Object,
     title: String,
     videoSection: String,
-    descriptin: String,
+    description: String,
     videoLength: Number,
     videoPlayer: String,
     links: [linkSchema],
     suggestion: String,
     questions: [commentSchema],
+    quiz: [quizSchema],
 });
 
 const courseSchema = new Schema<ICourse>({
@@ -127,7 +144,7 @@ const courseSchema = new Schema<ICourse>({
     benefits: [{title: String}],
     prerequisites: [{title: String}],
     reviews: [reviewSchema],
-    courseData: [courseDataSchema],
+    courseContent: [courseDataSchema],
     ratings: {
         type: Number,
         default: 0,
@@ -136,6 +153,9 @@ const courseSchema = new Schema<ICourse>({
         type: Number,
         default: 0,
     },
+    language: {
+        type: String,
+    }
 }, {timestamps: true});
 
 const CourseModel: Model<ICourse> = mongoose.model("Course", courseSchema);
