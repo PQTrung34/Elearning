@@ -19,7 +19,7 @@ interface ILink extends Document {
     url: string;
 }
 
-interface IQuiz extends Document {
+export interface IQuiz extends Document {
     time: number,
     question: string,
     options: Array<string>,
@@ -37,7 +37,7 @@ interface ICourseData extends Document {
     links: ILink[];
     suggestion: string;
     questions: IComment[];
-    quiz?: IQuiz;
+    quiz?: IQuiz[];
 }
 
 interface ICourse extends Document {

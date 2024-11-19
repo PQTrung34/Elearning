@@ -11,6 +11,7 @@ import ejs from 'ejs';
 import sendMail from '../utils/sendMail';
 import NotificationModel from '../models/notification.model';
 import axios from 'axios';
+import { IQuiz } from '../models/course.model';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -466,6 +467,55 @@ export const generateVideoUrl = CatchAsyncError(
       );
       res.json(response.data);
     } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+// thêm quiz
+interface IAddQuiz {
+  courseId: string;
+  contentId: string;
+  time: number;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+export const addQuiz = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, contentId, time, question, options, correctAnswer } =
+        req.body as IAddQuiz;
+
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return next(new ErrorHandler('Course not found', 400));
+      }
+
+      const content = course?.courseContent?.find(
+        (item: any) => item._id.toString() === contentId);
+
+      if (!content) {
+        return next(new ErrorHandler('Content not found', 400));
+      }
+
+      const newQuiz = {
+        time,
+        question,
+        options,
+        correctAnswer,
+      } as IQuiz;
+
+      content?.quiz?.push(newQuiz);
+      await course?.save();
+      await redis.set(courseId, JSON.stringify(course), 'EX', 604800); // 7days
+      res.status(200).json({
+        success: true,
+        course,
+      })
+    }
+    catch (error) {
       return next(new ErrorHandler(error.message, 400));
     }
   }
