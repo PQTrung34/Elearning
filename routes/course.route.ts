@@ -1,5 +1,5 @@
 import express from "express";
-import { addAnswer, addQuestion, addQuiz, addReplyToReview, addReview, deleteCourse, editCourse, generateVideoUrl, getAllCourses, getAllCoursesAdmin, getCourseByUser, getSingleCourse, uploadCourse } from "../controllers/course.controller";
+import { addAnswer, addQuestion, addQuiz, addReplyToReview, addReview, deleteCourse, editCourse, generateVideoUrl, getAllCourses, getAllCoursesAdmin, getCourseByUser, getLanguage, getSingleCourse, uploadCourse } from "../controllers/course.controller";
 import { authorizeRoles, isAutheticated } from "../middleware/auth";
 import { updateAccessToken } from "../controllers/user.controller";
 const courseRouter = express.Router();
@@ -29,5 +29,7 @@ courseRouter.delete('/delete-course/:id',updateAccessToken, isAutheticated, auth
 courseRouter.post('/getVdoCipherOTP', generateVideoUrl);
 
 courseRouter.post('/add-quiz', updateAccessToken, isAutheticated, authorizeRoles("admin"), addQuiz);
+
+courseRouter.get('/get-language/:id', updateAccessToken, getLanguage);
 
 export default courseRouter;

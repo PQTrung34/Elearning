@@ -520,3 +520,23 @@ export const addQuiz = CatchAsyncError(
     }
   }
 );
+
+// lấy ngôn ngữ từ khoá học
+export const getLanguage = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const courseId = req.params.id;
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return next(new ErrorHandler('Course not found', 400));
+      }
+      res.status(200).json({
+        success: true,
+        "language": course?.language,
+      })
+    }
+    catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+)
