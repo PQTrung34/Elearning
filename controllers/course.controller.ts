@@ -12,6 +12,7 @@ import sendMail from '../utils/sendMail';
 import NotificationModel from '../models/notification.model';
 import axios from 'axios';
 import { IQuiz } from '../models/course.model';
+import userModel from '../models/user.model';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -540,3 +541,137 @@ export const getLanguage = CatchAsyncError(
     }
   }
 )
+
+
+// theo dõi tiến trình học
+export const trackCourseProgress = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, contentId, progressData } = req.body;
+      const userId = req.user?._id;
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+      }
+
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+          return next(new ErrorHandler('Course not found', 404));
+      }
+
+      // tìm hoặc tạo tiến trình khoá học
+      let courseProgress = user.courseProgress.find(
+        progress => progress.courseId.toString() === courseId
+      );
+
+      if (!courseProgress) {
+        courseProgress = {
+          courseId,
+          completedContents: [],
+          lastAccessed: new Date(),
+          overallProgress: 0
+        };
+        // user.courseProgress.push(courseProgress);
+      }
+
+      // tìm hoặc tạo tiến trình bài học
+      let contentProgress = courseProgress.completedContents.find(
+        content => content.contentId.toString() === contentId
+      );
+
+      if (!contentProgress) {
+        contentProgress = {
+          contentId,
+          completed: false,
+          lastAccessed: new Date(),
+          watchTime: 0,
+          quizProgress: [],
+          codeExerciseProgress: []
+        };
+        // courseProgress.completedContents.push(contentProgress);
+      }
+
+      // Update watch time
+      if (progressData.watchTime) {
+        contentProgress.watchTime = progressData.watchTime;
+      }
+      // contentProgress.watchTime = watchTime;
+      // contentProgress.lastAccessed = new Date();
+      if (progressData.quizProgress) {
+        progressData.quizProgress.forEach((quizProgress: any) => {
+          const existingProgress = contentProgress.quizProgress.find(
+              q => q.quizId.toString() === quizProgress.quizId
+          );
+
+          if (existingProgress) {
+              existingProgress.isCorrect = quizProgress.isCorrect;
+              existingProgress.attempts += 1;
+              existingProgress.lastAttemptAt = new Date();
+          } else {
+              contentProgress.quizProgress.push({
+                  quizId: quizProgress.quizId,
+                  isCorrect: quizProgress.isCorrect,
+                  attempts: 1,
+                  lastAttemptAt: new Date()
+              });
+          }
+        });
+      }
+      
+      // Calculate content completion
+      const totalQuestions = course.courseContent.find(
+        content => content._id.toString() === contentId
+      )?.quiz.length || 0;
+      const answeredCorrectly = contentProgress.quizProgress.filter(
+        q => q.isCorrect
+      ).length;
+      contentProgress.completed = answeredCorrectly === totalQuestions;
+
+      // Calculate overall course progress
+      const totalContents = course.courseContent.length;
+      const completedContents = courseProgress.completedContents.filter(
+          content => content.completed
+      ).length;
+
+      courseProgress.overallProgress = (completedContents / totalContents) * 100;
+      courseProgress.lastAccessed = new Date();
+
+      courseProgress.completedContents.push(contentProgress);
+      user.courseProgress.push(courseProgress);
+
+      await user.save();
+      res.status(200).json({
+        success: true,
+        progress: courseProgress
+      });
+    }
+    catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+)
+
+export const getCourseProgress = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId } = req.params;
+      const userId = req.user?._id;
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+      }
+
+      const courseProgress = user.courseProgress.find(
+        progress => progress.courseId.toString() === courseId
+      );
+
+      res.status(200).json({
+        success: true,
+        progress: courseProgress
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+})

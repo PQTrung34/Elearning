@@ -26,6 +26,15 @@ export interface IQuiz extends Document {
     correctAnswer: number,
 }
 
+interface ITestCase extends Document {
+    
+}
+
+export interface ICode extends Document {
+    question: string,
+    testCase: Array<ITestCase>,
+}
+
 interface ICourseData extends Document {
     title: string;
     description: string;
@@ -38,6 +47,7 @@ interface ICourseData extends Document {
     suggestion: string;
     questions: IComment[];
     quiz?: IQuiz[];
+    questionCode?: ICode[];
 }
 
 interface ICourse extends Document {
