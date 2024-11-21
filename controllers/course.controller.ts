@@ -663,15 +663,31 @@ export const getCourseProgress = CatchAsyncError(
         return next(new ErrorHandler('User not found', 404));
       }
 
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+          return next(new ErrorHandler('Course not found', 404));
+      }
+
       const courseProgress = user.courseProgress.find(
         progress => progress.courseId.toString() === courseId
       );
 
+      if (!courseProgress) {
+        return next(new ErrorHandler('Course progress not found', 404));
+      }
+
+      // Tìm nội dung chưa hoàn thành gần nhất
+      const currentContent = courseProgress.completedContents.find(
+        content => !content.completed
+      );
+
       res.status(200).json({
         success: true,
-        progress: courseProgress
+        progress: courseProgress,
+        currentContent: currentContent || 'All contents completed'
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 400));
     }
-})
+  }
+);
