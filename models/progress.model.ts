@@ -20,7 +20,7 @@ export interface IArrayProgress {
     order: number;
 }
 
-interface IProgressLesson extends Document {
+interface IProgressLesson {
     courseId: string;
     userId: string;
     lesson: Array<IArrayProgress>;

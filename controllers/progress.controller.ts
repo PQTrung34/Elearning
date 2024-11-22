@@ -75,14 +75,12 @@ export const getProgress = CatchAsyncError(async(req: Request, res: Response, ne
         if (!progress.lesson.length){
             lastLesson = course.courseContent[0];
         } else {
-            // Lấy bài học cuối cùng dựa trên thứ tự
-            const lastLessonData = progress.lesson.reduce((prev, current) => 
-                (prev.order > current.order ? prev : current)
-            );
-
-            // Xác định bài học gần nhất
-            const currentIndex = course.courseContent.findIndex(content => content._id === lastLessonData.contentId);
-            lastLesson = course.courseContent[currentIndex + 1] || course.courseContent[currentIndex]; // Bài tiếp theo hoặc giữ nguyên
+            lastLesson = progress.lesson.find(content => {
+                const quizCheck = content.quiz.every(quiz => quiz.status);
+                const codeCheck = content.code.every(code => code.status);
+                console.log(!quizCheck && !codeCheck)
+                return !(quizCheck && codeCheck)
+            })
         }
         
         res.status(200).json({
