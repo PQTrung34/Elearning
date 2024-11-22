@@ -11,6 +11,7 @@ import sendMail from "../utils/sendMail";
 import NotificationModel from "../models/notification.model";
 import { getAllOrdersService, newOrder } from "../services/order.service";
 import { redis } from "../utils/redis";
+import progressModel from "../models/progress.model";
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 // create order
@@ -64,8 +65,38 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
         } catch (error) {
             return next(new ErrorHandler(error.message,400));
         }
+
+        // let lesson = [];
+        // course.courseContent?.forEach((content: any) => {
+        //     let quizzes = [];
+        //     content.quiz?.forEach((item: any) => {
+        //         quizzes.push({
+        //             quizId: item._id,
+        //             status: false
+        //         })
+        //     })
+        //     let codes = [];
+        //     content.questionCode?.forEach((item: any) => {
+        //         codes.push({
+        //             codeId: item._id,
+        //             status: false
+        //         })
+        //     })
+        //     lesson.push({
+        //         contentId: content._id,
+        //         quiz: quizzes,
+        //         code: codes
+        //     })
+        // })
+
+        const progressData = {
+            courseId: courseId,
+            userId: user?._id,
+            lesson: [],
+        }
         
         user?.courses.push({courseId});
+        await progressModel.create(progressData);
         await redis.set(req.user?._id, JSON.stringify(user));
         await user?.save();
         const notification = await NotificationModel.create({
@@ -113,6 +144,7 @@ export const newPayment = CatchAsyncError(async(req: Request, res: Response, nex
                 enabled: true,
             }
         });
+
         res.status(201).json({
             success: true,
             client_secret: myPayment.client_secret,

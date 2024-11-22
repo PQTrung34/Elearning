@@ -543,6 +543,23 @@ export const getLanguage = CatchAsyncError(
 )
 
 
+export const addProgress = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId, lessonId, quizId, quizStatus } = req.body;
+      const userId = req.user?._id;
+
+      const user = await userModel.findById(userId);
+      if (!user) {
+        return next(new ErrorHandler('User not found', 404));
+      }
+      
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+}
+)
+
 // theo dõi tiến trình học
 export const trackCourseProgress = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
