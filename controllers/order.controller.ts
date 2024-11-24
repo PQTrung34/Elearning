@@ -2,7 +2,7 @@ require("dotenv").config();
 import { Request, Response, NextFunction } from "express";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
 import ErrorHandler from "../utils/ErrorHandler";
-import OrderModel, {IOrder} from "../models/order.model";
+import {IOrder} from "../models/order.model";
 import userModel from "../models/user.model";
 import CourseModel from "../models/course.model";
 import path from "path";
@@ -29,7 +29,7 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
             }
         }
         const user = await userModel.findById(req.user?._id);
-        const courseExist = user?.courses.some((course: any) => course._id.toString === courseId);
+        const courseExist = user?.courses.some((course: any) => course.courseId.toString() === courseId);
         if (courseExist) {
             return next(new ErrorHandler("You have already purchased this course",400));
         }

@@ -5,38 +5,6 @@ import jwt from "jsonwebtoken";
 
 const emailRegexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-interface IQuizProgress {
-    quizId: string;
-    isCorrect: boolean;
-    attempts: number;
-    lastAttemptAt?: Date;
-}
-
-interface ICodeExerciseProgress {
-    exerciseId: string;
-    isCompleted: boolean;
-    attempts: number;
-    lastSubmittedCode?: string;
-    lastAttemptAt?: Date;
-    passedTestCases: number[];
-}
-
-interface IContentProgress {
-    contentId: string;
-    completed: boolean;
-    lastAccessed: Date;
-    watchTime: number; // in seconds
-    quizProgress?: IQuizProgress[];
-    codeExerciseProgress?: ICodeExerciseProgress[];
-}
-
-interface ICourseProgress {
-    courseId: string;
-    completedContents: IContentProgress[];
-    lastAccessed: Date;
-    overallProgress: number; // percentage
-}
-
 export interface IUser extends Document {
     name: string;
     email: string;
@@ -48,7 +16,6 @@ export interface IUser extends Document {
     role: string;
     isVerified: boolean;
     courses: Array<{courseId: string}>;
-    courseProgress: ICourseProgress[];
     comparePassword: (password: string) => Promise<boolean>;
     SignAccessToken: () => string;
     SignRefreshToken: () => string;
@@ -93,60 +60,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema({
             courseId: String
         }
     ],
-
-    courseProgress: [{
-        courseId: String,
-        completedContents: [{
-            contentId: String,
-            completed: {
-                type: Boolean,
-                default: false
-            },
-            lastAccessed: {
-                type: Date,
-                default: Date.now
-            },
-            watchTime: {
-                type: Number,
-                default: 0
-            },
-            quizProgress: [{
-                questionId: String,
-                isCorrect: {
-                    type: Boolean,
-                    default: false
-                },
-                attempts: {
-                    type: Number,
-                    default: 0
-                },
-                lastAttemptAt: Date
-            }],
-            codeExerciseProgress: [{
-                exerciseId: String,
-                isCompleted: {
-                    type: Boolean,
-                    default: false
-                },
-                attempts: {
-                    type: Number,
-                    default: 0
-                },
-                lastSubmittedCode: String,
-                lastAttemptAt: Date,
-                passedTestCases: [Number]
-            }]
-        }],
-        lastAccessed: {
-            type: Date,
-            default: Date.now
-        },
-        overallProgress: {
-            type: Number,
-            default: 0
-        }
-    }]
-}, {timestamps:true});
+});
 
 // hash password before saving
 userSchema.pre<IUser>('save', async function(next) {

@@ -16,33 +16,49 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
         }
         const progress = await progressModel.findOne({userId, courseId});
         const content = progress.lesson.find(content => content.contentId == contentId);
-        if (!progress.lesson.length || !content) {
-            if (!progress.lesson.length) {
-                const quiz: IQuizProgress[] = quizId ? [{ quizId:quizId, status:quizStatus }] : [];
-                const code: ICodeProgress[] = codeId ? [{ codeId:codeId, status:codeStatus }] : [];
-                const newLesson: IArrayProgress = {
-                    contentId: contentId,
-                    quiz: quiz,
-                    code: code,
-                    order: 1
-                };
-                progress.lesson.push(newLesson);
-            }
+        console.log(quizStatus);
+        if (!content) {
+            const quiz: IQuizProgress[] = quizId ? [{ quizId:quizId, status:quizStatus }] : [];
+            const code: ICodeProgress[] = codeId ? [{ codeId:codeId, status:codeStatus }] : [];
 
-            if (content) {
-                const quiz = content.quiz.find(quiz => quiz.quizId == quizId);
-                if (!quiz) {
-                    return next(new ErrorHandler('Quiz not found', 404));
+            // Tìm giá trị order lớn nhất trong lesson để thêm bài học mới
+            const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
+
+            const newLesson: IArrayProgress = {
+                contentId: contentId,
+                quiz: quiz,
+                code: code,
+                order: maxOrder + 1
+            };
+            progress.lesson.push(newLesson);
+        }
+        else {
+            const quiz = content.quiz.find(quiz => quiz.quizId == quizId);
+            if (!quiz) {
+                const newQuiz: IQuizProgress = {
+                    quizId: quizId,
+                    status: quizStatus
                 }
-                const code = content.code.find(code => code.codeId == codeId);
-                if (!code) {
-                    return next(new ErrorHandler('Code not found', 404));
-                }
+                content.quiz.push(newQuiz);
+                // return next(new ErrorHandler('Quiz not found', 404));
+            }
+            else {
                 quiz.status = quizStatus;
+            }
+            const code = content.code.find(code => code.codeId == codeId);
+            if (!code) {
+                const newCode: ICodeProgress = {
+                    codeId: codeId,
+                    status: codeStatus
+                }
+                content.code.push(newCode);
+                // return next(new ErrorHandler('Code not found', 404));
+            } 
+            else {
                 code.status = codeStatus;
             }
-            
         }
+        
         await progress.save();
         res.status(200).json({
             'success': true,
@@ -56,7 +72,7 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
 
 export const getProgress = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
     try {
-        const {courseId} = req.body;
+        const {courseId, contentId} = req.body;
         const userId = req.user?._id;
 
         const user = await userModel.findById(userId);
@@ -71,18 +87,21 @@ export const getProgress = CatchAsyncError(async(req: Request, res: Response, ne
         
 
         const progress = await progressModel.findOne({userId, courseId});
+
         let lastLesson;
         if (!progress.lesson.length){
-            lastLesson = course.courseContent[0];
+            const newLesson = {
+                contentId,
+                quiz: [],
+                code: [],
+                order: 1
+            }
+            progress.lesson.push(newLesson);
         } else {
-            lastLesson = progress.lesson.find(content => {
-                const quizCheck = content.quiz.every(quiz => quiz.status);
-                const codeCheck = content.code.every(code => code.status);
-                console.log(!quizCheck && !codeCheck)
-                return !(quizCheck && codeCheck)
-            })
+            lastLesson = progress.lesson.reduce((maxLesson, currentLesson) => {
+                return currentLesson.order > maxLesson.order ? currentLesson : maxLesson;
+            }, progress.lesson[0]);
         }
-        
         res.status(200).json({
             'success': true,
             lastLesson
