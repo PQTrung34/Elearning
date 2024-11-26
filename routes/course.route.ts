@@ -1,16 +1,17 @@
 import express from "express";
-import { addAnswer, addQuestion, addQuiz, addReplyToReview, addReview, deleteCourse, editCourse, generateVideoUrl, getAllCourses, getAllCoursesAdmin, getCourseByUser, getLanguage, getSingleCourse, uploadCourse } from "../controllers/course.controller";
+import { addAnswer, addQuestion, addQuiz, addReplyToReview, addReview, deleteCourse, editCourse, generateVideoUrl, getAllCourses, getAllCoursesAdmin, getCourseByUser, getLanguage, getSingleCourse, reviewQuiz, uploadCourse } from "../controllers/course.controller";
 import { authorizeRoles, isAutheticated } from "../middleware/auth";
 import { updateAccessToken } from "../controllers/user.controller";
 const courseRouter = express.Router();
+import multer from "multer";
 
 courseRouter.post('/create-course', updateAccessToken, isAutheticated, authorizeRoles("admin"), uploadCourse);
 
 courseRouter.put('/edit-course/:id', updateAccessToken, isAutheticated, authorizeRoles("admin"), editCourse);
 
-courseRouter.get('/get-course/:id', updateAccessToken, getSingleCourse);
+courseRouter.get('/get-course/:id', getSingleCourse);
 
-courseRouter.get('/get-courses', updateAccessToken, getAllCourses);
+courseRouter.get('/get-courses', getAllCourses);
 
 courseRouter.get('/get-course-content/:id', updateAccessToken, isAutheticated, getCourseByUser);
 
@@ -31,5 +32,8 @@ courseRouter.post('/getVdoCipherOTP', generateVideoUrl);
 courseRouter.post('/add-quiz', updateAccessToken, isAutheticated, authorizeRoles("admin"), addQuiz);
 
 courseRouter.get('/get-language/:id', updateAccessToken, getLanguage);
+
+const upload = multer({ dest: "uploads/" });
+courseRouter.post("/review-quiz", upload.single("file"), reviewQuiz);
 
 export default courseRouter;

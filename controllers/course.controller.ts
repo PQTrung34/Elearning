@@ -12,6 +12,9 @@ import sendMail from '../utils/sendMail';
 import NotificationModel from '../models/notification.model';
 import axios from 'axios';
 import { IQuiz } from '../models/course.model';
+const fs = require('fs');
+import {docxParser} from 'docx-parser';
+import mammoth from 'mammoth';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -540,3 +543,72 @@ export const getLanguage = CatchAsyncError(
     }
   }
 )
+
+// đọc file, trả về mảng các câu hỏi như IQuizSection
+// viết thêm 1 hàm trộn, 1 route trộn
+// Hàm xử lý nội dung file và chuyển đổi thành câu hỏi
+const parseQuestions = (content) => {
+  if (!content || typeof content !== "string") {
+    throw new Error("Nội dung không hợp lệ.");
+  }
+
+  const lines = content.split("\n");
+  const questions = [];
+  let currentQuestion = null;
+
+  lines.forEach((line) => {
+    line = line.trim();
+    if (line.startsWith("Câu ")) {
+      if (currentQuestion) questions.push(currentQuestion); // Lưu câu hỏi trước
+      currentQuestion = { question: line.split(": ")[1], options: [], correctAnswer: null };
+    } else if (line.endsWith("(True)")) {
+      const answer = line.replace("(True)", "").trim();
+      currentQuestion.options.push(answer);
+      currentQuestion.correctAnswer = currentQuestion.options.length - 1;
+    } else if (line) {
+      currentQuestion.options.push(line);
+    }
+  });
+
+  if (currentQuestion) questions.push(currentQuestion); // Thêm câu hỏi cuối cùng
+  return questions;
+};
+
+// Controller để xử lý tệp upload
+export const reviewQuiz = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "Không có tệp nào được tải lên." });
+    }
+
+    const filePath = req.file.path;
+
+    // Đọc nội dung văn bản từ tệp bằng Mammoth
+    const result = await mammoth.extractRawText({ path: filePath });
+
+    if (!result || !result.value) {
+      throw new Error("Không thể đọc nội dung từ tệp.");
+    }
+
+    const data = result.value; // Văn bản thuần từ tệp
+    // console.log("Extracted Content:", data); // Debug nội dung trích xuất
+
+    // Chuyển đổi nội dung thành danh sách câu hỏi
+    const questions = parseQuestions(data);
+
+    // Xóa file tạm sau khi xử lý
+    fs.unlinkSync(filePath);
+
+    // Trả về danh sách câu hỏi
+    return res.status(200).json(questions);
+  } catch (error) {
+    console.error("Error processing file:", error.message);
+
+    // Nếu file tồn tại, hãy xóa file để dọn dẹp
+    if (req.file && req.file.path) {
+      fs.unlinkSync(req.file.path);
+    }
+
+    return res.status(500).json({ message: "Error processing file", error: error.message });
+  }
+};

@@ -35,6 +35,12 @@ export interface ICode extends Document {
     testCase: Array<ITestCase>,
 }
 
+interface IQuizSection {
+    question: string,
+    options: Array<string>,
+    correctAnswer: number,
+}
+
 interface ICourseData extends Document {
     title: string;
     description: string;
@@ -48,6 +54,7 @@ interface ICourseData extends Document {
     questions: IComment[];
     quiz?: IQuiz[];
     questionCode?: ICode[];
+    quizSection: IQuizSection[];
 }
 
 interface ICourse extends Document {
