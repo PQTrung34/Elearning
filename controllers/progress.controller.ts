@@ -14,9 +14,29 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
         if (!course) {
             return next(new ErrorHandler('Course not found', 404));
         }
+        
+        const contentInCourse = course.courseContent.find((item: any) => item._id.toString() === contentId);
+        if (!contentInCourse) {
+            return next(new ErrorHandler('Content not found', 404));
+        }
+
+        if (quizId) {
+            const quizInCourse = contentInCourse.quiz.find((item: any) => item._id.toString() === quizId);
+            if (!quizInCourse) {
+                return next(new ErrorHandler('Quiz not found', 404));
+            }
+        }
+
+        if (codeId) {
+            const codeInCourse = contentInCourse.questionCode.find((item: any) => item._id.toString() === codeId);
+            if (!codeInCourse) {
+                return next(new ErrorHandler('Code not found', 404));
+            }
+        }
+
         const progress = await progressModel.findOne({userId, courseId});
         const content = progress.lesson.find(content => content.contentId == contentId);
-        console.log(quizStatus);
+        // console.log(quizStatus);
         if (!content) {
             const quiz: IQuizProgress[] = quizId ? [{ quizId:quizId, status:quizStatus }] : [];
             const code: ICodeProgress[] = codeId ? [{ codeId:codeId, status:codeStatus }] : [];
@@ -75,9 +95,53 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
 
 export const getProgress = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
     try {
+        // const {courseId} = req.body;
+        const {courseId} = req.params;
+        const userId = req.user?._id;
+ 
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return next(new ErrorHandler('User not found', 404));
+        }
+ 
+        const course = await CourseModel.findById(courseId);
+        if (!course) {
+            return next(new ErrorHandler('Course not found', 404));
+        }
+       
+ 
+        const progress = await progressModel.findOne({userId, courseId});
+        let lastLesson;
+        if (!progress.lesson.length){
+            const newLesson = {
+                contentId: course.courseContent[0]._id.toString() || '',
+                quiz: [],
+                code: [],
+                order: 1,
+                isLessonCompleted: false
+            }
+            lastLesson = newLesson//them dong nay
+            progress.lesson.push(newLesson);
+        } else {
+            lastLesson = progress.lesson.reduce((maxLesson, currentLesson) => {
+                return currentLesson.order > maxLesson.order ? currentLesson : maxLesson;
+            }, progress.lesson[0]);
+        }
+        await progress.save()
+        // console.log(progress)
+        res.status(200).json({
+            'success': true,
+            lastLesson
+        })
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 400));
+    }
+})
+
+export const isLessonComplete = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
         const {courseId, contentId} = req.body;
         const userId = req.user?._id;
-
         const user = await userModel.findById(userId);
         if (!user) {
             return next(new ErrorHandler('User not found', 404));
@@ -87,35 +151,39 @@ export const getProgress = CatchAsyncError(async(req: Request, res: Response, ne
         if (!course) {
             return next(new ErrorHandler('Course not found', 404));
         }
-        
+
+        const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+        if (!content) {
+            return next(new ErrorHandler('Content not found', 404));
+        }
 
         const progress = await progressModel.findOne({userId, courseId});
-
-        let lastLesson;
-        if (!progress.lesson.length){
-            const newLesson = {
-                contentId,
-                quiz: [],
-                code: [],
-                order: 1,
-                isLessonCompleted: false
-            }
-            progress.lesson.push(newLesson);
-        } else {
-            lastLesson = progress.lesson.reduce((maxLesson, currentLesson) => {
-                return currentLesson.order > maxLesson.order ? currentLesson : maxLesson;
-            }, progress.lesson[0]);
+        if (!progress) {
+            return next(new ErrorHandler('Progress not found', 404));
         }
+
+        const lessonProgress = progress.lesson.find(lesson => lesson.contentId == contentId);
+        if (!lessonProgress) {
+            return next(new ErrorHandler('Content not found', 404));
+        }
+
+        const lessonCourse = course.courseContent.find((lesson: any) => lesson._id.toString() === contentId);
+
+        const countQuiz = lessonProgress.quiz.filter(quiz => quiz.status).length;
+        
+        const isComplete = countQuiz === lessonCourse?.quiz.length;
+
         res.status(200).json({
             'success': true,
-            lastLesson
+            "content": contentId,
+            'isComplete': isComplete
         })
     } catch (error) {
         return next(new ErrorHandler(error.message, 400));
     }
 })
     
-export const isComplete = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+export const isCourseComplete = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
     try {
         const courseId = req.body;
         const userId = req.user?._id;

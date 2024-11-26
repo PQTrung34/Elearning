@@ -573,6 +573,33 @@ const parseQuestions = (content) => {
   return questions;
 };
 
+const shuffle = (quizSection: IQuizSection[]): IQuizSection[] => {
+  return quizSection.map((question) => {
+    const { options, correctAnswer } = question;
+
+    // Tạo mảng các chỉ số [0, 1, 2, ...] tương ứng với các câu trả lời
+    const indices = options.map((_, index) => index);
+
+    // Tráo trộn chỉ số bằng cách sử dụng thuật toán Fisher-Yates
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // Sắp xếp lại câu trả lời theo chỉ số đã tráo
+    const shuffledOptions = indices.map((i) => options[i]);
+
+    // Tìm chỉ số mới của đáp án đúng
+    const newCorrectAnswer = indices.indexOf(correctAnswer);
+
+    return {
+      ...question,
+      options: shuffledOptions,
+      correctAnswer: newCorrectAnswer,
+    };
+  });
+};
+
 // Controller để xử lý tệp upload
 export const reviewQuiz = async (req, res) => {
   try {
@@ -632,33 +659,7 @@ export const reviewQuiz = async (req, res) => {
   }
 };
 
-const shuffle = (quizSection: IQuizSection[]): IQuizSection[] => {
-  return quizSection.map((question) => {
-    const { options, correctAnswer } = question;
-
-    // Tạo mảng các chỉ số [0, 1, 2, ...] tương ứng với các câu trả lời
-    const indices = options.map((_, index) => index);
-
-    // Tráo trộn chỉ số bằng cách sử dụng thuật toán Fisher-Yates
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
-
-    // Sắp xếp lại câu trả lời theo chỉ số đã tráo
-    const shuffledOptions = indices.map((i) => options[i]);
-
-    // Tìm chỉ số mới của đáp án đúng
-    const newCorrectAnswer = indices.indexOf(correctAnswer);
-
-    return {
-      ...question,
-      options: shuffledOptions,
-      correctAnswer: newCorrectAnswer,
-    };
-  });
-};
-
+// shuffle in database
 export const shuffleQuiz = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -683,6 +684,22 @@ export const shuffleQuiz = CatchAsyncError(
         content
       })
     } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+})
+
+export const shuffleAnswers = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const data = req.body;
+      const shuffleData = shuffle(data);
+
+      res.status(200).json({
+        'success': true,
+        shuffleData
+      })
+      }
+    catch (error) {
       return next(new ErrorHandler(error.message, 400));
     }
 })
