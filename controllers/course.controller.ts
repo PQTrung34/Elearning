@@ -11,9 +11,8 @@ import ejs from 'ejs';
 import sendMail from '../utils/sendMail';
 import NotificationModel from '../models/notification.model';
 import axios from 'axios';
-import { IQuiz } from '../models/course.model';
-const fs = require('fs');
-import {docxParser} from 'docx-parser';
+import { IQuiz, IQuizSection } from '../models/course.model';
+import fs from 'fs';
 import mammoth from 'mammoth';
 
 // upload course
@@ -554,7 +553,7 @@ const parseQuestions = (content) => {
 
   const lines = content.split("\n");
   const questions = [];
-  let currentQuestion = null;
+  let currentQuestion: any = null;
 
   lines.forEach((line) => {
     line = line.trim();
@@ -581,6 +580,16 @@ export const reviewQuiz = async (req, res) => {
       return res.status(400).json({ message: "Không có tệp nào được tải lên." });
     }
 
+    const {courseId, contentId} = req.body;
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: "Course not found" }, 400);
+    }
+
+    const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+    if (!content) {
+      return res.status(404).json({ message: "Content not found" }, 400);
+    }
     const filePath = req.file.path;
 
     // Đọc nội dung văn bản từ tệp bằng Mammoth
@@ -595,6 +604,16 @@ export const reviewQuiz = async (req, res) => {
 
     // Chuyển đổi nội dung thành danh sách câu hỏi
     const questions = parseQuestions(data);
+    if (!content.quizSection) {
+      content.quizSection = [];
+    }
+    content.quizSection.push(...questions);
+    // for (const question of questions) {
+    //   content.quizSection.push(question);
+    // }
+
+    await course.save();
+    // course.markModified('courseContent');
 
     // Xóa file tạm sau khi xử lý
     fs.unlinkSync(filePath);
@@ -612,3 +631,58 @@ export const reviewQuiz = async (req, res) => {
     return res.status(500).json({ message: "Error processing file", error: error.message });
   }
 };
+
+const shuffle = (quizSection: IQuizSection[]): IQuizSection[] => {
+  return quizSection.map((question) => {
+    const { options, correctAnswer } = question;
+
+    // Tạo mảng các chỉ số [0, 1, 2, ...] tương ứng với các câu trả lời
+    const indices = options.map((_, index) => index);
+
+    // Tráo trộn chỉ số bằng cách sử dụng thuật toán Fisher-Yates
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [indices[i], indices[j]] = [indices[j], indices[i]];
+    }
+
+    // Sắp xếp lại câu trả lời theo chỉ số đã tráo
+    const shuffledOptions = indices.map((i) => options[i]);
+
+    // Tìm chỉ số mới của đáp án đúng
+    const newCorrectAnswer = indices.indexOf(correctAnswer);
+
+    return {
+      ...question,
+      options: shuffledOptions,
+      correctAnswer: newCorrectAnswer,
+    };
+  });
+};
+
+export const shuffleQuiz = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const {courseId, contentId} = req.body;
+      const course = await CourseModel.findById(courseId);
+      if (!course) {
+        return next(new ErrorHandler('Course not found', 400));
+      }
+
+      const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+      if (!content) {
+        return next(new ErrorHandler('Content not found', 400));
+      }
+
+      if (content.quizSection) {
+        content.quizSection = shuffle(content.quizSection)
+      }
+      await course.save();
+
+      res.status(200).json({
+        'success': true,
+        content
+      })
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+})

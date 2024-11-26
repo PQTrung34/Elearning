@@ -23,12 +23,13 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
 
             // Tìm giá trị order lớn nhất trong lesson để thêm bài học mới
             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
-
+            const isComplete = quizStatus && codeStatus;
             const newLesson: IArrayProgress = {
                 contentId: contentId,
                 quiz: quiz,
                 code: code,
-                order: maxOrder + 1
+                order: maxOrder + 1,
+                isLessonCompleted: isComplete,
             };
             progress.lesson.push(newLesson);
         }
@@ -57,6 +58,8 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
             else {
                 code.status = codeStatus;
             }
+            const isComplete = content.quiz.every(quiz => quiz.status) && content.code.every(code => code.status);
+            content.isLessonCompleted = isComplete;
         }
         
         await progress.save();
@@ -94,7 +97,8 @@ export const getProgress = CatchAsyncError(async(req: Request, res: Response, ne
                 contentId,
                 quiz: [],
                 code: [],
-                order: 1
+                order: 1,
+                isLessonCompleted: false
             }
             progress.lesson.push(newLesson);
         } else {
@@ -111,3 +115,32 @@ export const getProgress = CatchAsyncError(async(req: Request, res: Response, ne
     }
 })
     
+export const isComplete = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
+        const courseId = req.body;
+        const userId = req.user?._id;
+
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return next(new ErrorHandler('User not found', 404));
+        }
+
+        const course = await CourseModel.findById(courseId);
+        if (!course) {
+            return next(new ErrorHandler('Course not found', 404));
+        }
+
+        const progress = await progressModel.findOne({userId, courseId});
+        if (!progress) {
+            return next(new ErrorHandler('Progress not found', 404));
+        }
+
+        const isComplete = progress.lesson.every(lesson => lesson.isLessonCompleted);
+        res.status(200).json({
+            'success': true,
+            'is course complete': isComplete
+        })
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 400));
+    }
+})

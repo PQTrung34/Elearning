@@ -18,12 +18,14 @@ export interface IArrayProgress {
     quiz: Array<IQuizProgress>;
     code: Array<ICodeProgress>;
     order: number;
+    isLessonCompleted: boolean;
 }
 
 interface IProgressLesson {
     courseId: string;
     userId: string;
     lesson: Array<IArrayProgress>;
+    isCompleted: boolean;
 }
 
 const quizSchema = new Schema<IQuizProgress>({
@@ -42,6 +44,7 @@ const arraySchema = new Schema<IArrayProgress>({
     quiz: [quizSchema],
     code: [codeSchema],
     order: Number,
+    isLessonCompleted: Boolean
 });
 
 const progressSchema = new Schema<IProgressLesson>({

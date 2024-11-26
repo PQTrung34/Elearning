@@ -35,7 +35,7 @@ export interface ICode extends Document {
     testCase: Array<ITestCase>,
 }
 
-interface IQuizSection {
+export interface IQuizSection {
     question: string,
     options: Array<string>,
     correctAnswer: number,
@@ -54,7 +54,7 @@ interface ICourseData extends Document {
     questions: IComment[];
     quiz?: IQuiz[];
     questionCode?: ICode[];
-    quizSection: IQuizSection[];
+    quizSection?: IQuizSection[];
 }
 
 interface ICourse extends Document {
@@ -104,6 +104,21 @@ const quizSchema = new Schema<IQuiz>({
     correctAnswer: Number,
 })
 
+const testCaseSchema = new Schema<ITestCase>({
+
+})
+
+const codeSchema = new Schema<ICode>({
+    question: String,
+    testCase: [testCaseSchema],
+})
+
+const quizSectionSchema = new Schema<IQuizSection>({
+    question: String,
+    options: [String],
+    correctAnswer: Number,
+})
+
 const courseDataSchema = new Schema<ICourseData>({
     videoUrl: String,
     videoThumbnail: Object,
@@ -116,6 +131,8 @@ const courseDataSchema = new Schema<ICourseData>({
     suggestion: String,
     questions: [commentSchema],
     quiz: [quizSchema],
+    questionCode: [codeSchema],
+    quizSection: [quizSectionSchema],
 });
 
 const courseSchema = new Schema<ICourse>({

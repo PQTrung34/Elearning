@@ -175,7 +175,7 @@ export const updateAccessToken = CatchAsyncError(async(req: Request, res: Respon
 
         const user = JSON.parse(session);
         const accessToken = jwt.sign({id: user._id}, process.env.ACCESS_TOKEN as string, {
-            expiresIn: "5m"
+            expiresIn: "3h"
         });
 
         const refreshToken = jwt.sign({id: user._id}, process.env.REFRESH_TOKEN as string, {
