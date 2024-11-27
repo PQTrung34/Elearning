@@ -660,7 +660,7 @@ export const reviewQuiz = async (req, res) => {
 };
 
 // shuffle in database
-export const shuffleQuiz = CatchAsyncError(
+export const shuffleQuizInDatabase = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {courseId, contentId} = req.body;
@@ -688,7 +688,7 @@ export const shuffleQuiz = CatchAsyncError(
     }
 })
 
-export const shuffleAnswers = CatchAsyncError(
+export const shuffleQuestion = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req.body;
@@ -702,4 +702,28 @@ export const shuffleAnswers = CatchAsyncError(
     catch (error) {
       return next(new ErrorHandler(error.message, 400));
     }
+})
+
+const shuffleArray = (array: any[]): any[] => {
+  const shuffled = [...array]; // Tạo một bản sao để không làm thay đổi mảng gốc
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const randomIndex = Math.floor(Math.random() * (i + 1)); // Chọn ngẫu nhiên một chỉ số từ 0 đến i
+    // Hoán đổi phần tử hiện tại với phần tử tại randomIndex
+    [shuffled[i], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[i]];
+  }
+  return shuffled;
+};
+
+export const shuffleQuiz = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = req.body;
+      const shuffleData = shuffleArray(data);
+
+      res.status(200).json({
+        'success': true,
+        shuffleData
+      })
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 400));
+  }
 })
