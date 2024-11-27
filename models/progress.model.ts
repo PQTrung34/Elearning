@@ -15,8 +15,8 @@ export interface ICodeProgress {
 
 export interface IArrayProgress {
     contentId: string;
-    quiz: Array<IQuizProgress>;
-    code: Array<ICodeProgress>;
+    quiz?: Array<IQuizProgress>;
+    code?: Array<ICodeProgress>;
     order: number;
     isLessonCompleted: boolean;
 }
@@ -31,13 +31,13 @@ interface IProgressLesson {
 const quizSchema = new Schema<IQuizProgress>({
     quizId: String,
     status: Boolean,
-});
+}, { _id: false });
 
 
 const codeSchema = new Schema<ICodeProgress>({
     codeId: String,
     status: Boolean,
-});
+}, { _id: false });
 
 const arraySchema = new Schema<IArrayProgress>({
     contentId: String,

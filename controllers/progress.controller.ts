@@ -36,49 +36,72 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
 
         const progress = await progressModel.findOne({userId, courseId});
         const content = progress.lesson.find(content => content.contentId == contentId);
-        // console.log(quizStatus);
+
         if (!content) {
             const quiz: IQuizProgress[] = quizId ? [{ quizId:quizId, status:quizStatus }] : [];
             const code: ICodeProgress[] = codeId ? [{ codeId:codeId, status:codeStatus }] : [];
 
             // Tìm giá trị order lớn nhất trong lesson để thêm bài học mới
             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
-            const isComplete = quizStatus && codeStatus;
+            
+            const countQuiz = quizId ? quizStatus ? 1 : 0 : 0;
+            const countCode = codeId ? codeStatus ? 1 : 0 : 0;
+
+            const totalQuiz = contentInCourse?.quiz.length || 0;
+            const totalCode = contentInCourse?.questionCode.length || 0;
+
+            const isComplete = 
+                (countQuiz === totalQuiz || totalQuiz === 0) &&
+                (countCode === totalCode || totalCode === 0);
+
             const newLesson: IArrayProgress = {
                 contentId: contentId,
-                quiz: quiz,
-                code: code,
                 order: maxOrder + 1,
                 isLessonCompleted: isComplete,
             };
+
+            if (quizId) {
+                newLesson.quiz = quiz;
+            }
+
+            if (codeId) {
+                newLesson.code = code;
+            }
             progress.lesson.push(newLesson);
         }
         else {
-            const quiz = content.quiz.find(quiz => quiz.quizId == quizId);
-            if (!quiz) {
-                const newQuiz: IQuizProgress = {
-                    quizId: quizId,
-                    status: quizStatus
+            if (quizId) {
+                const quiz = content.quiz.find(quiz => quiz.quizId == quizId);
+                if (!quiz) {
+                    const newQuiz: IQuizProgress = {
+                        quizId: quizId,
+                        status: quizStatus
+                    }
+                    content.quiz.push(newQuiz);
                 }
-                content.quiz.push(newQuiz);
-                // return next(new ErrorHandler('Quiz not found', 404));
-            }
-            else {
-                quiz.status = quizStatus;
-            }
-            const code = content.code.find(code => code.codeId == codeId);
-            if (!code) {
-                const newCode: ICodeProgress = {
-                    codeId: codeId,
-                    status: codeStatus
+                else {
+                    quiz.status = quizStatus;
                 }
-                content.code.push(newCode);
-                // return next(new ErrorHandler('Code not found', 404));
-            } 
-            else {
-                code.status = codeStatus;
             }
-            const isComplete = content.quiz.every(quiz => quiz.status) && content.code.every(code => code.status);
+
+            if (codeId) {
+                const code = content.code.find(code => code.codeId == codeId);
+                if (!code) {
+                    const newCode: ICodeProgress = {
+                        codeId: codeId,
+                        status: codeStatus
+                    }
+                    content.code.push(newCode);
+                } 
+                else {
+                    code.status = codeStatus;
+                }
+            }
+            
+            // const isComplete = content.quiz.every(quiz => quiz.status) && content.code.every(code => code.status);
+            const isComplete = 
+                (content.quiz.length === 0 || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
+                (content.code.length === 0 || (content.code.every(code => code.status) && contentInCourse?.questionCode.length === content.code.length));
             content.isLessonCompleted = isComplete;
         }
         
