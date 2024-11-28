@@ -100,8 +100,8 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
             
             // const isComplete = content.quiz.every(quiz => quiz.status) && content.code.every(code => code.status);
             const isComplete = 
-                (content.quiz.length === 0 || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
-                (content.code.length === 0 || (content.code.every(code => code.status) && contentInCourse?.questionCode.length === content.code.length));
+                (contentInCourse.quiz.length === 0 || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
+                (contentInCourse.questionCode.length === 0 || (content.code.every(code => code.status) && contentInCourse?.questionCode.length === content.code.length));
             content.isLessonCompleted = isComplete;
         }
         
@@ -190,11 +190,9 @@ export const isLessonComplete = CatchAsyncError(async(req: Request, res: Respons
             return next(new ErrorHandler('Content not found', 404));
         }
 
-        const lessonCourse = course.courseContent.find((lesson: any) => lesson._id.toString() === contentId);
-
-        const countQuiz = lessonProgress.quiz.filter(quiz => quiz.status).length;
-        
-        const isComplete = countQuiz === lessonCourse?.quiz.length;
+        const isComplete = 
+            (content.quiz.length === 0 || (lessonProgress.quiz.every(quiz => quiz.status) && content?.quiz.length === lessonProgress.quiz.length)) &&
+            (content.questionCode.length === 0 || (lessonProgress.code.every(code => code.status) && content?.questionCode.length === lessonProgress.code.length));
 
         res.status(200).json({
             'success': true,
@@ -226,7 +224,7 @@ export const isCourseComplete = CatchAsyncError(async(req: Request, res: Respons
             return next(new ErrorHandler('Progress not found', 404));
         }
 
-        const isComplete = progress.lesson.every(lesson => lesson.isLessonCompleted);
+        const isComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && (progress.lesson.length === course.courseContent.length);
         res.status(200).json({
             'success': true,
             'is course complete': isComplete

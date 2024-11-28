@@ -14,6 +14,7 @@ import axios from 'axios';
 import { IQuiz, IQuizSection } from '../models/course.model';
 import fs from 'fs';
 import mammoth from 'mammoth';
+import progressModel from '../models/progress.model';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -323,6 +324,7 @@ export const addReview = CatchAsyncError(
     try {
       const userCourseList = req.user?.courses;
       const courseId = req.params.id;
+      const userId = req.user?._id;
 
       // check if courseId exist in userCourseList
       const courseExist = userCourseList?.some(
@@ -334,7 +336,18 @@ export const addReview = CatchAsyncError(
         );
       }
 
+      const progress = await progressModel.findOne({userId, courseId});
+      if (!progress) {
+        return next(new ErrorHandler('You must complete the course first before review', 404));
+      }
+
       const course = await CourseModel.findById(courseId);
+      const isComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && (progress.lesson.length === course.courseContent.length);
+
+      if (!isComplete) {
+        return next(new ErrorHandler('You must complete the course first before review', 400));
+      }
+
       const { review, rating } = req.body as IAddReviewData;
       const reviewData: any = {
         user: req.user,
