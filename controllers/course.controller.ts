@@ -619,55 +619,34 @@ export const reviewQuiz = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "Không có tệp nào được tải lên." });
     }
-
-    const {courseId, contentId} = req.body;
-    const course = await CourseModel.findById(courseId);
-    if (!course) {
-      return res.status(404).json({ message: "Course not found" }, 400);
-    }
-
-    const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
-    if (!content) {
-      return res.status(404).json({ message: "Content not found" }, 400);
-    }
     const filePath = req.file.path;
-
+ 
     // Đọc nội dung văn bản từ tệp bằng Mammoth
     const result = await mammoth.extractRawText({ path: filePath });
-
+ 
     if (!result || !result.value) {
       throw new Error("Không thể đọc nội dung từ tệp.");
     }
-
+ 
     const data = result.value; // Văn bản thuần từ tệp
     // console.log("Extracted Content:", data); // Debug nội dung trích xuất
-
+ 
     // Chuyển đổi nội dung thành danh sách câu hỏi
     const questions = parseQuestions(data);
-    if (!content.quizSection) {
-      content.quizSection = [];
-    }
-    content.quizSection.push(...questions);
-    // for (const question of questions) {
-    //   content.quizSection.push(question);
-    // }
-
-    await course.save();
-    // course.markModified('courseContent');
-
+ 
     // Xóa file tạm sau khi xử lý
     fs.unlinkSync(filePath);
-
+ 
     // Trả về danh sách câu hỏi
     return res.status(200).json(questions);
   } catch (error) {
     console.error("Error processing file:", error.message);
-
+ 
     // Nếu file tồn tại, hãy xóa file để dọn dẹp
     if (req.file && req.file.path) {
       fs.unlinkSync(req.file.path);
     }
-
+ 
     return res.status(500).json({ message: "Error processing file", error: error.message });
   }
 };
@@ -729,9 +708,9 @@ const shuffleArray = (array: any[]): any[] => {
 
 export const shuffleQuiz = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const data = req.body;
+    const {data} = req.body;
       const shuffleData = shuffleArray(data);
-
+ 
       res.status(200).json({
         'success': true,
         shuffleData

@@ -10,6 +10,6 @@ progressRouter.post('/update-progress', isAutheticated, updateAccessToken, updat
 
 progressRouter.get('/get-progress/:courseId', isAutheticated, updateAccessToken, getProgress);
 
-progressRouter.get('/is-complete', isAutheticated, updateAccessToken, isLessonComplete);
+progressRouter.post('/is-complete', isAutheticated, updateAccessToken, isLessonComplete);
 
 export default progressRouter;
