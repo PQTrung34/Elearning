@@ -46,7 +46,7 @@ export const editCourse = CatchAsyncError(
     try {
       const data = req.body;
       const thumbnail = data.thumbnail;
-
+ 
       if (thumbnail) {
         if (thumbnail.public_id) {
           await cloudinary.v2.uploader.destroy(thumbnail.public_id);
@@ -69,6 +69,23 @@ export const editCourse = CatchAsyncError(
           };
         }
       }
+      const sectionMap = new Map();
+ 
+      data.courseContent.forEach((video) => {
+        const section = video.videoSection;
+        if (!sectionMap.has(section)) {
+          sectionMap.set(section, []);
+        }
+        sectionMap.get(section).push(video);
+      });
+ 
+      sectionMap.forEach((videos) => {
+        videos.forEach((video, index) => {
+          if (index !== videos.length - 1) {
+            video.quizSection = [];
+          }
+        });
+      });
       const courseId = req.params.id;
       const course = await CourseModel.findByIdAndUpdate(
         courseId,
@@ -77,7 +94,7 @@ export const editCourse = CatchAsyncError(
         },
         { new: true }
       );
-
+ 
       res.status(201).json({
         success: true,
         course,
