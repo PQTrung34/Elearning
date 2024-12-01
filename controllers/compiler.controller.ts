@@ -2,7 +2,8 @@ require('dotenv').config();
 import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
-const compiler = require('compilex');
+import CourseModel, { ICode } from "../models/course.model";
+
 
 // const option = {stats: true};
 // compiler.init(option);
@@ -73,6 +74,37 @@ const compiler = require('compilex');
 // compiler.flush(function(){
 //     console.log('All temporary files flushed !'); 
 // });
+
+export const addTestCase = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {courseId, contentId, question, testCases} = req.body;
+
+        const course = await CourseModel.findById(courseId);
+        if (!course) {
+            return next(new ErrorHandler('Course not found', 400));
+        }
+
+        const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+        if (!content) {
+            return next(new ErrorHandler('Content not found', 400));
+        }
+
+        const code: ICode = {
+            question: question,
+            testCases: testCases
+        }
+
+        content.questionCode.push(code);
+        await course.save();
+
+        res.status(200).json({
+            success: true,
+            content
+        });
+    } catch (error: any) {
+        return next(new ErrorHandler(error.message, 400));
+    }
+});
 
 const getLanguageId = (lang) => {
     const languages = {
@@ -149,4 +181,83 @@ export const executeCode = CatchAsyncError(async (req: Request, res: Response, n
         return next(new ErrorHandler(error.message, 400));
     }
 })
-// '1a44ca33ecmsh81af76dad703e9fp1f458fjsn0d6dac662fc0'
+
+
+export const executeTestCases = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const courseId = req.params.id;
+        const {contentId, questionId, code, language} = req.body;
+
+        const course = await CourseModel.findById(courseId);
+        if (!course) {
+            return next(new ErrorHandler('Course not found', 400));
+        }
+
+        const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+        if (!content) {
+            return next(new ErrorHandler('Content not found', 400));
+        }
+
+        const languageId = getLanguageId(language);
+
+        const testCases = content.questionCode.find((item: any) => item._id.toString() === questionId);
+        if (!testCases) {
+            return next(new ErrorHandler('Test case not found', 400));
+        }
+        const results = []
+
+        for (const testCase of testCases.testCases) {
+            const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/json',
+                    'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+                    'X-RapidAPI-Key': process.env.RAPID_API_KEY,
+                },
+                body: JSON.stringify({
+                    source_code: code,
+                    language_id: languageId,
+                    stdin:  testCase.testCase
+                }),
+            });
+            const data = await response.json();
+            const token = data.token;
+
+            let result;
+            const maxAttempts = 10;
+            for (let i = 0; i < maxAttempts; i++) {
+                const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
+                    headers: {
+                        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+                        'X-RapidAPI-Key': process.env.RAPID_API_KEY,
+                    },
+                });
+
+                result = await resultResponse.json();
+                if (result.status.id > 2) break;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            if (!result) {
+                results.push({ testCase: testCases.testCases, error: 'Timeout' });
+                continue;
+            }
+
+            results.push({
+                testCase: testCase,
+                expectedResult: testCase.expectedResult,
+                actualResult: result.stdout,
+                passed: result.stdout.trim() === testCase.expectedResult.trim(),
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            results
+        });
+
+
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 400));
+    }
+})

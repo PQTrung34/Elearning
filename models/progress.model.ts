@@ -11,18 +11,19 @@ export interface ICodeProgress {
     status: boolean;
 }
  
-export interface IArrayProgress {
+export interface ILessonProgress {
     contentId: string;
     quiz?: Array<IQuizProgress>;
     code?: Array<ICodeProgress>;
     order: number;
     isLessonCompleted: boolean;
+    isQuizSectionCompleted?: boolean;
 }
  
 interface IProgressLesson {
     courseId: string;
     userId: string;
-    lesson: Array<IArrayProgress>;
+    lesson: Array<ILessonProgress>;
     isCompleted: boolean;
 }
  
@@ -36,18 +37,19 @@ const codeSchema = new Schema<ICodeProgress>({
     status: Boolean,
 }, { _id: false });
  
-const arraySchema = new Schema<IArrayProgress>({
+const lessonSchema = new Schema<ILessonProgress>({
     contentId: String,
     quiz: [quizSchema],
     code: [codeSchema],
     order: Number, // Không tự động tăng
     isLessonCompleted: Boolean,
+    isQuizSectionCompleted: Boolean,
 });
  
 const progressSchema = new Schema<IProgressLesson>({
     courseId: String,
     userId: String,
-    lesson: [arraySchema],
+    lesson: [lessonSchema],
 });
  
 const progressModel: Model<IProgressLesson> = mongoose.model("Progress", progressSchema);

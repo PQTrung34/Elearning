@@ -26,13 +26,14 @@ export interface IQuiz extends Document {
     correctAnswer: number,
 }
 
-interface ITestCase extends Document {
-    
+interface ITestCase {
+    testCase: string,
+    expectedResult: string,
 }
 
-export interface ICode extends Document {
+export interface ICode {
     question: string,
-    testCase: Array<ITestCase>,
+    testCases: Array<ITestCase>,
 }
 
 export interface IQuizSection {
@@ -105,12 +106,13 @@ const quizSchema = new Schema<IQuiz>({
 })
 
 const testCaseSchema = new Schema<ITestCase>({
-
-})
+    testCase: String,
+    expectedResult: String,
+}, {_id: false});
 
 const codeSchema = new Schema<ICode>({
     question: String,
-    testCase: [testCaseSchema],
+    testCases: [testCaseSchema],
 })
 
 const quizSectionSchema = new Schema<IQuizSection>({
@@ -130,9 +132,9 @@ const courseDataSchema = new Schema<ICourseData>({
     links: [linkSchema],
     suggestion: String,
     questions: [commentSchema],
-    quiz: [quizSchema],
+    quiz: [quizSchema], // quiz của bài học
     questionCode: [codeSchema],
-    quizSection: [quizSectionSchema],
+    quizSection: [quizSectionSchema], // quiz tổng kết
 });
 
 const courseSchema = new Schema<ICourse>({

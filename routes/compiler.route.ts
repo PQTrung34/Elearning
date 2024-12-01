@@ -1,8 +1,12 @@
 import express from "express";
 import { updateAccessToken } from "../controllers/user.controller";
-import { executeCode } from "../controllers/compiler.controller";
+import { addTestCase, executeCode, executeTestCases } from "../controllers/compiler.controller";
 const compilerRouter = express.Router();
 
-compilerRouter.post('/compiler', updateAccessToken, executeCode);
+compilerRouter.post('/compiler', executeCode);
+
+compilerRouter.post('/add-testcase', addTestCase);
+
+compilerRouter.post('/run-testcase/:id', executeTestCases);
 
 export default compilerRouter;

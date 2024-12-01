@@ -3,7 +3,7 @@ import { CatchAsyncError } from '../middleware/catchAsyncError';
 import ErrorHandler from '../utils/ErrorHandler';
 import CourseModel, { IQuiz } from '../models/course.model';
 import userModel from '../models/user.model';
-import progressModel, { IArrayProgress } from '../models/progress.model';
+import progressModel, { ILessonProgress } from '../models/progress.model';
 import { IQuizProgress, ICodeProgress } from '../models/progress.model';
 
 export const updateProgress = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
@@ -54,7 +54,7 @@ export const updateProgress = CatchAsyncError(async(req: Request, res: Response,
                 (countQuiz === totalQuiz || totalQuiz === 0) &&
                 (countCode === totalCode || totalCode === 0);
 
-            const newLesson: IArrayProgress = {
+            const newLesson: ILessonProgress = {
                 contentId: contentId,
                 order: maxOrder + 1,
                 isLessonCompleted: isComplete,
