@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
 import CourseModel, { ICode } from "../models/course.model";
+import test from "node:test";
 
 
 // const option = {stats: true};
@@ -247,8 +248,9 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
             }
 
             results.push({
-                testCase: testCase.testCase,
-                expectedResult: testCase.expectedResult,
+                // testCase: testCase.testCase,
+                // expectedResult: testCase.expectedResult,
+                testCaseId: testCase._id,
                 actualResult: result.stdout,
                 passed: result.stdout.trim() === testCase.expectedResult.trim(),
             });

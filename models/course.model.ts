@@ -26,7 +26,7 @@ export interface IQuiz extends Document {
     correctAnswer: number,
 }
 
-interface ITestCase {
+interface ITestCase extends Document {
     testCase: string,
     expectedResult: string,
     isHide: boolean,
@@ -110,7 +110,7 @@ const testCaseSchema = new Schema<ITestCase>({
     testCase: String,
     expectedResult: String,
     isHide: Boolean,
-}, {_id: false});
+});
 
 const codeSchema = new Schema<ICode>({
     question: String,
