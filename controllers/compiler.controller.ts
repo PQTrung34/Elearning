@@ -201,60 +201,62 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
 
         const languageId = getLanguageId(language);
 
-        const testCases = content.questionCode.testCases;
+        const testCases = content.questionCode;
         if (!testCases) {
             return next(new ErrorHandler('Test case not found', 400));
         }
+        
+        const results = []
 
-        const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
-            method: 'POST',
-            headers: {
-                'content-type': 'application/json',
-                'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-                'X-RapidAPI-Key': process.env.RAPID_API_KEY,
-            },
-            body: JSON.stringify({
-                source_code: code,
-                language_id: languageId,
-                stdin: testCases
-            }),
-        });
-        const data = await response.json();
-        const token = data.token;
-
-        let result;
-        const maxAttempts = 10;
-        for (let i = 0; i < maxAttempts; i++) {
-            const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
+        for (const testCase of testCases.testCases) {
+            const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
+                method: 'POST',
                 headers: {
-                  'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-                  'X-RapidAPI-Key': process.env.RAPID_API_KEY,
+                    'content-type': 'application/json',
+                    'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+                    'X-RapidAPI-Key': process.env.RAPID_API_KEY,
                 },
+                body: JSON.stringify({
+                    source_code: code,
+                    language_id: languageId,
+                    stdin:  testCase.testCase
+                }),
             });
-            result = await resultResponse.json();
-            if (result.status.id <= 2) {
+            const data = await response.json();
+            const token = data.token;
+
+            let result;
+            const maxAttempts = 10;
+            for (let i = 0; i < maxAttempts; i++) {
+                const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
+                    headers: {
+                        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
+                        'X-RapidAPI-Key': process.env.RAPID_API_KEY,
+                    },
+                });
+
+                result = await resultResponse.json();
+                if (result.status.id > 2) break;
                 await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            if (!result) {
+                results.push({ testCase: testCases.testCases, error: 'Timeout' });
                 continue;
             }
-            break;
-        }
 
-        if (!result) {
-            return next(new ErrorHandler('Timeout khi chờ kết quả', 408));
+            results.push({
+                testCase: testCase,
+                expectedResult: testCase.expectedResult,
+                actualResult: result.stdout,
+                passed: result.stdout.trim() === testCase.expectedResult.trim(),
+            });
         }
-
-        result = {
-            testCase: testCases.testCase,
-            expectedResult: testCases.expectedResult,
-            actualResult: result.stdout,
-            passed: result.stdout.trim() === testCases.expectedResult.trim(),
-        };
 
         res.status(200).json({
             success: true,
-            result
+            results
         });
-
 
     } catch (error) {
         return next(new ErrorHandler(error.message, 400));

@@ -34,7 +34,7 @@ interface ITestCase {
 
 export interface ICode {
     question: string,
-    testCases: ITestCase,
+    testCases: ITestCase[],
 }
 
 export interface IQuizSection {
@@ -114,7 +114,7 @@ const testCaseSchema = new Schema<ITestCase>({
 
 const codeSchema = new Schema<ICode>({
     question: String,
-    testCases: testCaseSchema,
+    testCases: [testCaseSchema],
 })
 
 const quizSectionSchema = new Schema<IQuizSection>({
