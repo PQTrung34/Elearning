@@ -99,9 +99,10 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
                 }
             }
             const isComplete = 
-                (content.quiz.length === 0 || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
-                (!content.code || (content.code?.status === true && contentInCourse.questionCode._id.toString() === content.code.codeId));
+                (contentInCourse.quiz.length === 0 || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
+                (contentInCourse.questionCode.testCases.length === 0 || (content.code?.status === true && contentInCourse.questionCode._id.toString() === content.code.codeId));
             content.isLessonCompleted = isComplete;
+            console.log(contentInCourse.questionCode.testCases)
         }
 
         await progress.save();
@@ -209,7 +210,7 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
             (lessonProgress.quiz?.length === content.quiz?.length && lessonProgress.quiz?.every((quiz) => quiz.status));
 
         const codeCompleted = 
-            !content.questionCode || (lessonProgress.code?.status === true);
+            content.questionCode.testCases.length === 0  || (lessonProgress.code?.status === true);
 
         const isComplete = quizCompleted && codeCompleted;
 
