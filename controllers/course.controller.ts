@@ -14,7 +14,6 @@ import axios from 'axios';
 import { IQuiz, IQuizSection } from '../models/course.model';
 import fs from 'fs';
 import mammoth from 'mammoth';
-import progressModel from '../models/progress.model';
 
 // upload course
 export const uploadCourse = CatchAsyncError(

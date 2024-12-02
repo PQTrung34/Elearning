@@ -44,7 +44,7 @@ const lessonSchema = new Schema<ILessonProgress>({
     order: Number, // Không tự động tăng
     isLessonCompleted: Boolean,
     isQuizSectionCompleted: Boolean,
-});
+}, { _id: false });
  
 const progressSchema = new Schema<IProgressLesson>({
     courseId: String,

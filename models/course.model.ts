@@ -32,7 +32,7 @@ interface ITestCase {
     isHide: boolean,
 }
 
-export interface ICode {
+export interface ICode extends Document {
     question: string,
     testCases: ITestCase[],
 }
