@@ -101,6 +101,7 @@ export const editCourse = CatchAsyncError(
           }
         });
       });
+      data.courseContent = Array.from(sectionMap.values()).flat();
       const courseId = req.params.id;
       const course = await CourseModel.findByIdAndUpdate(
         courseId,
@@ -125,25 +126,30 @@ export const getSingleCourse = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const courseId = req.params.id;
-      const isCacheExist = await redis.get(courseId);
-      if (isCacheExist) {
-        const course = JSON.parse(isCacheExist);
-        res.status(200).json({
-          succces: true,
-          course,
-        });
-      } else {
-        const course = await CourseModel.findById(req.params.id).select(
-          '-courseData.videoUrl -courseData-suggestion -courseData.questions -courseData.links'
-        );
-        await redis.set(courseId, JSON.stringify(course));
-        res.status(200).json({
-          success: true,
-          course,
-        });
+      // const cachedCourse = await redis.get(courseId);
+      // if (cachedCourse) {
+      //   const course = JSON.parse(cachedCourse);
+      //   return res.status(200).json({
+      //     success: true,
+      //     course,
+      //   });
+      // }
+
+      const course = await CourseModel.findById(courseId)
+        .select('-courseData.videoUrl -courseData.suggestion -courseData.questions -courseData.links');
+
+      if (!course) {
+        return next(new ErrorHandler('Course not found', 404));
       }
+
+      await redis.set(courseId, JSON.stringify(course), 'EX', 3600); // Thêm thời gian hết hạn (1 giờ)
+
+      res.status(200).json({
+        success: true,
+        course,
+      });
     } catch (error) {
-      return next(new ErrorHandler(error.message, 400));
+      return next(new ErrorHandler(error.message || 'Internal Server Error', 500));
     }
   }
 );

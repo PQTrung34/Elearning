@@ -7,6 +7,6 @@ compilerRouter.post('/compiler', executeCode);
 
 compilerRouter.post('/add-testcase', addTestCase);
 
-compilerRouter.post('/run-testcase/:id', executeTestCases);
+compilerRouter.post('/run-testcase', executeTestCases);
 
 export default compilerRouter;

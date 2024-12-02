@@ -89,7 +89,7 @@ export const addTestCase = CatchAsyncError(async (req: Request, res: Response, n
             return next(new ErrorHandler('Content not found', 400));
         }
 
-        const code: ICode = {
+        const code: any = {
             question: question,
             testCases: testCases
         }
@@ -186,8 +186,7 @@ export const executeCode = CatchAsyncError(async (req: Request, res: Response, n
 
 export const executeTestCases = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const courseId = req.params.id;
-        const {contentId, questionId, code, language} = req.body;
+        const {courseId,contentId, code, language} = req.body;
 
         const course = await CourseModel.findById(courseId);
         if (!course) {
@@ -219,12 +218,13 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 body: JSON.stringify({
                     source_code: code,
                     language_id: languageId,
-                    stdin:  testCase.testCase
+                    // base64_encoded: true,
+                    // stdin: Buffer.from(testCase.testCase).toString('base64'),
+                    stdin: testCase.testCase
                 }),
             });
             const data = await response.json();
             const token = data.token;
-
             let result;
             const maxAttempts = 10;
             for (let i = 0; i < maxAttempts; i++) {
@@ -236,6 +236,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 });
 
                 result = await resultResponse.json();
+                console.log(result)
                 if (result.status.id > 2) break;
                 await new Promise(resolve => setTimeout(resolve, 1000));
             }
@@ -246,7 +247,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
             }
 
             results.push({
-                testCase: testCase,
+                testCase: testCase.testCase,
                 expectedResult: testCase.expectedResult,
                 actualResult: result.stdout,
                 passed: result.stdout.trim() === testCase.expectedResult.trim(),
