@@ -14,7 +14,7 @@ export interface ICodeProgress {
 export interface ILessonProgress {
     contentId: string;
     quiz?: Array<IQuizProgress>;
-    code?: Array<ICodeProgress>;
+    code?: ICodeProgress;
     order: number;
     isLessonCompleted: boolean;
     isQuizSectionCompleted?: boolean;
@@ -40,7 +40,7 @@ const codeSchema = new Schema<ICodeProgress>({
 const lessonSchema = new Schema<ILessonProgress>({
     contentId: String,
     quiz: [quizSchema],
-    code: [codeSchema],
+    code: codeSchema,
     order: Number, // Không tự động tăng
     isLessonCompleted: Boolean,
     isQuizSectionCompleted: Boolean,
