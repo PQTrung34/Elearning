@@ -21,8 +21,6 @@ export const uploadCourse = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const data = req.body;
-      console.log('controller');
-      console.log(data);
       const thumbnail = data.thumbnail;
       if (thumbnail) {
         const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
@@ -33,6 +31,24 @@ export const uploadCourse = CatchAsyncError(
           url: myCloud.secure_url,
         };
       }
+      const sectionMap = new Map();
+ 
+      data.courseContent.forEach((video) => {
+        const section = video.videoSection;
+        if (!sectionMap.has(section)) {
+          sectionMap.set(section, []);
+        }
+        sectionMap.get(section).push(video);
+      });
+ 
+      sectionMap.forEach((videos) => {
+        videos.forEach((video, index) => {
+          if (index !== videos.length - 1) {
+            video.quizSection = [];
+          }
+        });
+      });
+      data.courseContent = Array.from(sectionMap.values()).flat();
       createCourse(data, res, next);
     } catch (error) {
       return next(new ErrorHandler(error.message, 400));
@@ -339,32 +355,22 @@ interface IAddReviewData {
 export const addReview = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log(req.user?.courses);
+      console.log(req.params.id);
       const userCourseList = req.user?.courses;
       const courseId = req.params.id;
-      const userId = req.user?._id;
-
+ 
       // check if courseId exist in userCourseList
       const courseExist = userCourseList?.some(
-        (course: any) => course._id.toString() == courseId.toString()
+        (course: any) => course.courseId == courseId
       );
       if (!courseExist) {
         return next(
           new ErrorHandler('You are not eligible for this course', 400)
         );
       }
-
-      const progress = await progressModel.findOne({userId, courseId});
-      if (!progress) {
-        return next(new ErrorHandler('You must complete the course first before review', 404));
-      }
-
+ 
       const course = await CourseModel.findById(courseId);
-      const isComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && (progress.lesson.length === course.courseContent.length);
-
-      if (!isComplete) {
-        return next(new ErrorHandler('You must complete the course first before review', 400));
-      }
-
       const { review, rating } = req.body as IAddReviewData;
       const reviewData: any = {
         user: req.user,
@@ -372,30 +378,45 @@ export const addReview = CatchAsyncError(
         rating,
       };
       course?.reviews.push(reviewData);
-
+ 
       let avg = 0;
       course?.reviews.forEach((rev: any) => {
         avg += rev.rating;
       });
-
+ 
       if (course) {
         course.ratings = avg / course?.reviews.length;
       }
-
+ 
       await course?.save();
-
+ 
       await redis.set(courseId, JSON.stringify(course), 'EX', 604800); //7 days
-
+ 
       // create notification
       await NotificationModel.create({
         user: req.user?._id,
         title: 'New review received',
         message: `${req.user.name} has given a review in ${course?.name}`,
       });
-
+ 
       res.status(200).json({
         success: true,
-        course,
+        reviews: course.reviews,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+export const getReviewInCourse = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { courseId } = req.params;
+      const course = await CourseModel.findById(courseId);
+      res.status(200).json({
+        success: true,
+        review: course.reviews,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 400));

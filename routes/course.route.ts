@@ -1,5 +1,5 @@
 import express from "express";
-import { addAnswer, addQuestion, addQuiz, addReplyToReview, addReview, deleteCourse, editCourse, generateVideoUrl, getAllCourses, getAllCoursesAdmin, getCourseByUser, getLanguage, getSingleCourse, reviewQuiz, shuffleQuestion, shuffleQuiz, uploadCourse } from "../controllers/course.controller";
+import { addAnswer, addQuestion, addQuiz, addReplyToReview, addReview, deleteCourse, editCourse, generateVideoUrl, getAllCourses, getAllCoursesAdmin, getCourseByUser, getLanguage, getReviewInCourse, getSingleCourse, reviewQuiz, shuffleQuestion, shuffleQuiz, uploadCourse } from "../controllers/course.controller";
 import { authorizeRoles, isAutheticated } from "../middleware/auth";
 import { updateAccessToken } from "../controllers/user.controller";
 const courseRouter = express.Router();
@@ -39,5 +39,7 @@ courseRouter.post("/review-quiz", upload.single("file"), reviewQuiz);
 courseRouter.post('/shuffle-question', shuffleQuestion);
 
 courseRouter.post('/shuffle-quiz', shuffleQuiz);
+
+courseRouter.get('/get-review/:courseId', getReviewInCourse);
 
 export default courseRouter;
