@@ -74,7 +74,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             if (quizId) {
                 const quiz = content.quiz.find(quiz => quiz.quizId == quizId);
                 if (!quiz) {
-                    const newQuiz: IQuizProgress = {
+                    const newQuiz: any = {
                         quizId: quizId,
                         status: quizStatus
                     }
@@ -88,7 +88,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             if (codeId) {
                 const code = content.code;
                 if (!code) {
-                    const newCode: ICodeProgress = {
+                    const newCode: any = {
                         codeId: codeId,
                         status: codeStatus
                     }
@@ -99,10 +99,9 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
                 }
             }
             const isComplete = 
-                (contentInCourse.quiz.length === 0 || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
-                (contentInCourse.questionCode.testCases.length === 0 || (content.code?.status === true && contentInCourse.questionCode._id.toString() === content.code.codeId));
+                ((contentInCourse.quiz.length === 0) || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
+                ((contentInCourse.questionCode.testCases.length === 0) || (content.code?.status === true && contentInCourse?.questionCode._id.toString() === content.code.codeId));
             content.isLessonCompleted = isComplete;
-            console.log(contentInCourse.questionCode.testCases)
         }
 
         await progress.save();
