@@ -10,11 +10,17 @@ export interface ICodeProgress {
     codeId: string;
     status: boolean;
 }
+
+export interface IQuizSectionProgress {
+    quizSectionId: string;
+    status: boolean;
+}
  
 export interface ILessonProgress {
     contentId: string;
     quiz?: Array<IQuizProgress>;
     code?: ICodeProgress;
+    quizSection?: Array<IQuizSectionProgress>;
     order: number;
     isLessonCompleted: boolean;
     isQuizSectionCompleted?: boolean;
@@ -36,11 +42,17 @@ const codeSchema = new Schema<ICodeProgress>({
     codeId: String,
     status: Boolean,
 }, { _id: false });
+
+const quizSectionSchema = new Schema<IQuizSectionProgress>({
+    quizSectionId: String,
+    status: Boolean,
+}, { _id: false });
  
 const lessonSchema = new Schema<ILessonProgress>({
     contentId: String,
     quiz: [quizSchema],
     code: codeSchema,
+    quizSection: [quizSectionSchema],
     order: Number, // Không tự động tăng
     isLessonCompleted: Boolean,
     isQuizSectionCompleted: Boolean,

@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import ErrorHandler from "../utils/ErrorHandler";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
 import CourseModel, { ICode } from "../models/course.model";
-import test from "node:test";
+import progressModel, { ICodeProgress } from "../models/progress.model";
 
 
 // const option = {stats: true};
@@ -188,6 +188,7 @@ export const executeCode = CatchAsyncError(async (req: Request, res: Response, n
 export const executeTestCases = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
     try {
         const {courseId,contentId, code, language} = req.body;
+        const userId = req.user?._id;
 
         const course = await CourseModel.findById(courseId);
         if (!course) {
@@ -255,6 +256,25 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 passed: result.stdout.trim() === testCase.expectedResult.trim(),
             });
         }
+
+        // thêm results vào codeprogress
+        const progress = await progressModel.findOne({ userId, courseId });
+        if (!progress) {
+            return next(new ErrorHandler('Progress not found', 400));
+        }
+
+        const contentProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
+        if (!contentProgress) {
+            return next(new ErrorHandler('Content progress not found', 400));
+        }
+
+        const codeProgress: ICodeProgress = {
+            codeId: content.questionCode._id.toString(),
+            status: results.every((result) => result.passed),
+        };
+
+        contentProgress.code = codeProgress;
+        await progress.save();
 
         res.status(200).json({
             success: true,

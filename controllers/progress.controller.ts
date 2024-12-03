@@ -4,11 +4,11 @@ import ErrorHandler from '../utils/ErrorHandler';
 import CourseModel, { IQuiz } from '../models/course.model';
 import userModel from '../models/user.model';
 import progressModel, { ILessonProgress } from '../models/progress.model';
-import { IQuizProgress, ICodeProgress } from '../models/progress.model';
+import { IQuizProgress, ICodeProgress, IQuizSectionProgress } from '../models/progress.model';
 
 export const updateProgress = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { courseId, contentId, quizId, quizStatus, codeId, codeStatus } = req.body;
+        const { courseId, contentId, quizId, quizStatus, codeId, codeStatus, quizSectionId, quizSectionStatus } = req.body;
         const userId = req.user?._id;
 
         const course = await CourseModel.findById(courseId);
@@ -32,28 +32,39 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             return next(new ErrorHandler('Code not found', 404));
         }
 
+        if (quizSectionId) {
+            const quizSectionInCourse = contentInCourse.quizSection.find((item: any) => item._id.toString() === quizSectionId);
+            if (!quizSectionInCourse) {
+                return next(new ErrorHandler('Quiz Section not found', 404));
+            }
+        }
+
         const progress = await progressModel.findOne({ userId, courseId });
         if (!progress) {
             return next(new ErrorHandler('Progress not found', 404));
         }
 
-        const content = progress.lesson.find((lesson) => lesson.contentId === contentId);
-        if (!content) {
+        const lessonProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
+        if (!lessonProgress) {
             const quiz: IQuizProgress[] = quizId ? [{ quizId:quizId, status:quizStatus }] : [];
             const code: ICodeProgress = codeId ? { codeId:codeId, status:codeStatus } : undefined;
+            const quizSection: IQuizSectionProgress[] = quizSectionId ? [{ quizSectionId:quizSectionId, status:quizSectionStatus }] : [];
 
             // Tìm giá trị order lớn nhất trong lesson để thêm bài học mới
             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
             
             const countQuiz = quizId ? quizStatus ? 1 : 0 : 0;
             const countCode = codeId ? codeStatus ? 1 : 0 : 0;
+            const countSection = quizSectionId ? quizSectionStatus ? 1 : 0 : 0;
 
             const totalQuiz = contentInCourse.quiz.length || 0;
-            const totalCode = contentInCourse.questionCode || 0;
+            const totalCode = contentInCourse.questionCode.testCases.length || 0;
+            const totalSection = contentInCourse.quizSection.length || 0;
 
             const isComplete = 
                 (countQuiz === totalQuiz || totalQuiz === 0) &&
-                (countCode === totalCode || totalCode === 0);
+                (countCode === totalCode || totalCode === 0) &&
+                (countSection === totalSection || totalSection === 0);
 
             const newLesson: ILessonProgress = {
                 contentId: contentId,
@@ -68,17 +79,21 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             if (codeId) {
                 newLesson.code = code;
             }
+
+            if (quizSectionId) {
+                newLesson.quizSection = quizSection;
+            }
             progress.lesson.push(newLesson);
 
         } else {
             if (quizId) {
-                const quiz = content.quiz.find(quiz => quiz.quizId == quizId);
+                const quiz = lessonProgress.quiz.find(quiz => quiz.quizId == quizId);
                 if (!quiz) {
                     const newQuiz: any = {
                         quizId: quizId,
                         status: quizStatus
                     }
-                    content.quiz.push(newQuiz);
+                    lessonProgress.quiz.push(newQuiz);
                 }
                 else {
                     quiz.status = quizStatus;
@@ -86,22 +101,39 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             }
 
             if (codeId) {
-                const code = content.code;
+                const code = lessonProgress.code;
                 if (!code) {
                     const newCode: any = {
                         codeId: codeId,
                         status: codeStatus
                     }
-                    content.code = newCode;
+                    lessonProgress.code = newCode;
                 } 
                 else {
                     code.status = codeStatus;
                 }
             }
-            const isComplete = 
-                ((contentInCourse.quiz.length === 0) || (content.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === content.quiz.length)) &&
-                ((contentInCourse.questionCode.testCases.length === 0) || (content.code?.status === true && contentInCourse?.questionCode._id.toString() === content.code.codeId));
-            content.isLessonCompleted = isComplete;
+
+            if (quizSectionId) {
+                const quizSection = lessonProgress.quizSection.find(quizSection => quizSection.quizSectionId == quizSectionId);
+                if (!quizSection) {
+                    const newQuizSection: any = {
+                        quizSectionId: quizSectionId,
+                        status: quizSectionStatus
+                    }
+                    lessonProgress.quizSection.push(newQuizSection);
+                }
+                else {
+                    quizSection.status = quizSectionStatus;
+                }
+
+                lessonProgress.isQuizSectionCompleted = lessonProgress.quizSection.every(quizSection => quizSection.status) && 
+                    contentInCourse?.quizSection.length === lessonProgress.quizSection.length;
+            }
+            const isLessonComplete = 
+                ((contentInCourse.quiz.length === 0) || (lessonProgress.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === lessonProgress.quiz.length)) &&
+                ((contentInCourse.questionCode.testCases.length === 0) || (lessonProgress.code?.status === true && contentInCourse?.questionCode._id.toString() === lessonProgress.code.codeId));
+            lessonProgress.isLessonCompleted = isLessonComplete;
         }
 
         await progress.save();
@@ -211,7 +243,11 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
         const codeCompleted = 
             content.questionCode.testCases.length === 0  || (lessonProgress.code?.status === true);
 
-        const isComplete = quizCompleted && codeCompleted;
+        const quizSectionCompleted = lessonProgress.isQuizSectionCompleted ||
+            content.quizSection.length === 0 || 
+            (lessonProgress.quizSection?.length === content.quizSection?.length && lessonProgress.quizSection?.every((quizSection) => quizSection.status));
+
+        const isComplete = quizCompleted && codeCompleted && quizSectionCompleted;
 
         res.status(200).json({
             success: true,
@@ -243,10 +279,17 @@ export const isCourseComplete = CatchAsyncError(async(req: Request, res: Respons
             return next(new ErrorHandler('Progress not found', 404));
         }
 
-        const isComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && (progress.lesson.length === course.courseContent.length);
+        const quizSectionCompleted = progress.lesson.every(lesson => {
+            if (!lesson.isQuizSectionCompleted) return true;
+            return lesson.isQuizSectionCompleted;
+        });
+
+        const isCourseComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && 
+            (progress.lesson.length === course.courseContent.length) && quizSectionCompleted;
+        
         res.status(200).json({
             'success': true,
-            'is course complete': isComplete
+            'is course complete': isCourseComplete,
         })
     } catch (error) {
         return next(new ErrorHandler(error.message, 400));
