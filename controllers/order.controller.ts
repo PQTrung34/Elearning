@@ -93,6 +93,7 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
             courseId: courseId,
             userId: user?._id,
             lesson: [],
+            isCompleted: false,
         }
         
         user?.courses.push({courseId});

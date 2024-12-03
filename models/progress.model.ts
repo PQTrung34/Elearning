@@ -42,17 +42,11 @@ const codeSchema = new Schema<ICodeProgress>({
     codeId: String,
     status: Boolean,
 }, { _id: false });
-
-const quizSectionSchema = new Schema<IQuizSectionProgress>({
-    quizSectionId: String,
-    status: Boolean,
-}, { _id: false });
  
 const lessonSchema = new Schema<ILessonProgress>({
     contentId: String,
     quiz: [quizSchema],
     code: codeSchema,
-    quizSection: [quizSectionSchema],
     order: Number, // Không tự động tăng
     isLessonCompleted: Boolean,
     isQuizSectionCompleted: Boolean,

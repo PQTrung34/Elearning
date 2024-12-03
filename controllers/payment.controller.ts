@@ -233,9 +233,10 @@ export const checkPayment = CatchAsyncError(async(req: Request, res: Response, n
       // console.log('Gửi mail')
       const progressData = {
         courseId: courseId,
-        userId: userId,
+        userId: user?._id,
         lesson: [],
-      }
+        isCompleted: false,
+    }
       // console.log('Progress')
       user.courses.push({courseId});
       await progressModel.create(progressData);
