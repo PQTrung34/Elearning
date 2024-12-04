@@ -4,7 +4,7 @@ import ErrorHandler from '../utils/ErrorHandler';
 import CourseModel, { IQuiz } from '../models/course.model';
 import userModel from '../models/user.model';
 import progressModel, { ILessonProgress } from '../models/progress.model';
-import { IQuizProgress, ICodeProgress, IQuizSectionProgress } from '../models/progress.model';
+import { IQuizProgress, ICodeProgress } from '../models/progress.model';
 
 export const updateProgress = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -68,8 +68,8 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
                 newLesson.code = code;
             }
 
-            if (quizSectionStatus) {
-                newLesson.isQuizSectionCompleted = quizSectionStatus;
+            if (quizSectionStatus === true || quizSectionStatus === false) {
+                newLesson.isQuizSectionCompleted = quizSectionStatus || contentInCourse.quizSection.length === 0;
             }
 
             progress.lesson.push(newLesson);
@@ -103,8 +103,8 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
                 }
             }
 
-            if (quizSectionStatus) {
-                lessonProgress.isQuizSectionCompleted = quizSectionStatus;
+            if (quizSectionStatus === true || quizSectionStatus === false) {
+                lessonProgress.isQuizSectionCompleted = quizSectionStatus || contentInCourse.quizSection.length === 0;
             }
 
             const isLessonComplete = 
@@ -114,7 +114,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
         }
 
         const isQuizSectionCompleted = course.courseContent.every(async (content: any) => {
-            if (!content.quizSection) return true;
+            if (content.quizSection.length === 0) return true;
             const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId === content._id.toString());
             if (lessonProgress && lessonProgress.isQuizSectionCompleted) return lessonProgress.isQuizSectionCompleted;
             return false;
@@ -236,6 +236,7 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
             content.quizSection.length === 0 || (lessonProgress.isQuizSectionCompleted === true);
 
         const isComplete = quizCompleted && codeCompleted && isQuizSectionCompleted;
+        console.log(content.quizSection.length)
 
         res.status(200).json({
             success: true,
@@ -249,7 +250,7 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
     
 export const isCourseComplete = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
     try {
-        const courseId = req.body;
+        const {courseId} = req.body;
         const userId = req.user?._id;
 
         const user = await userModel.findById(userId);

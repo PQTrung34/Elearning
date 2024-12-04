@@ -10,17 +10,11 @@ export interface ICodeProgress {
     codeId: string;
     status: boolean;
 }
-
-export interface IQuizSectionProgress {
-    quizSectionId: string;
-    status: boolean;
-}
  
 export interface ILessonProgress {
     contentId: string;
     quiz?: Array<IQuizProgress>;
     code?: ICodeProgress;
-    quizSection?: Array<IQuizSectionProgress>;
     order: number;
     isLessonCompleted: boolean;
     isQuizSectionCompleted?: boolean;
@@ -56,6 +50,7 @@ const progressSchema = new Schema<IProgressLesson>({
     courseId: String,
     userId: String,
     lesson: [lessonSchema],
+    isCompleted: Boolean,
 });
  
 const progressModel: Model<IProgressLesson> = mongoose.model("Progress", progressSchema);
