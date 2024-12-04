@@ -311,8 +311,11 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
             };
 
             progress.lesson.push(newLesson);
-        } else {
+        } else if (lessonProgress.code) {
             lessonProgress.code.status = codeProgress.status;
+        }
+        else {
+            lessonProgress.code = codeProgress;
         }
         
         await progress.save();
