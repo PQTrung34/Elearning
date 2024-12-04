@@ -14,6 +14,7 @@ import axios from 'axios';
 import { IQuiz, IQuizSection } from '../models/course.model';
 import fs from 'fs';
 import mammoth from 'mammoth';
+import progressModel from '../models/progress.model';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -364,6 +365,7 @@ export const addReview = CatchAsyncError(
       console.log(req.params.id);
       const userCourseList = req.user?.courses;
       const courseId = req.params.id;
+      const userId = req.user?._id;
  
       // check if courseId exist in userCourseList
       const courseExist = userCourseList?.some(
@@ -377,6 +379,28 @@ export const addReview = CatchAsyncError(
  
       const course = await CourseModel.findById(courseId);
       const { review, rating } = req.body as IAddReviewData;
+
+      const progress = await progressModel.findOne({userId, courseId});
+      if (!progress) {
+        return next(new ErrorHandler('Progress not found', 404));
+      }
+
+      const isQuizSectionCompleted = course.courseContent.every(async (content: any) => {
+          if (!content.quizSection) return true;
+          const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId === content._id.toString());
+          if (lessonProgress && lessonProgress.isQuizSectionCompleted) return lessonProgress.isQuizSectionCompleted;
+          return false;
+      })
+
+      const isLessonComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && 
+        (progress.lesson.length === course.courseContent.length)
+
+      const isCourseComplete = isLessonComplete && isQuizSectionCompleted;
+
+      if (!isCourseComplete) {
+          return next(new ErrorHandler('You must complete course first before review', 400));
+      }
+
       const reviewData: any = {
         user: req.user,
         comment: review,

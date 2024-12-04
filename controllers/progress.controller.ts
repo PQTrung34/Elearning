@@ -232,16 +232,17 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
         const codeCompleted = 
             content.questionCode.testCases.length === 0  || (lessonProgress.code?.status === true);
 
-        const isQuizSectionCompleted = 
-            content.quizSection.length === 0 || (lessonProgress.isQuizSectionCompleted === true);
+        // const isQuizSectionCompleted = 
+        //     content.quizSection.length === 0 || (lessonProgress.isQuizSectionCompleted === true);
 
-        const isComplete = quizCompleted && codeCompleted && isQuizSectionCompleted;
-        console.log(content.quizSection.length)
-
+        const isComplete = quizCompleted && codeCompleted;
+        const isActiveQuizSection = content.quizSection.length > 0 && isComplete;
+        
         res.status(200).json({
             success: true,
             content: contentId,
             isComplete,
+            isActiveQuizSection,
         });
     } catch (error) {
         return next(new ErrorHandler(error.message, 400));
@@ -273,7 +274,7 @@ export const isCourseComplete = CatchAsyncError(async(req: Request, res: Respons
                 const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId === content._id.toString());
                 if (lessonProgress && lessonProgress.isQuizSectionCompleted) return lessonProgress.isQuizSectionCompleted;
                 return false;
-            })
+        })
 
         const isLessonComplete = progress.lesson.every(lesson => lesson.isLessonCompleted) && 
         (progress.lesson.length === course.courseContent.length)
