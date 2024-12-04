@@ -57,6 +57,7 @@ interface ICourseData extends Document {
     quiz?: IQuiz[];
     questionCode?: ICode;
     quizSection?: IQuizSection[];
+    timeQuizSection?: number
 }
 
 interface ICourse extends Document {
@@ -137,6 +138,7 @@ const courseDataSchema = new Schema<ICourseData>({
     quiz: [quizSchema], // quiz của bài học
     questionCode: codeSchema,
     quizSection: [quizSectionSchema], // quiz tổng kết
+    timeQuizSection: Number,
 });
 
 const courseSchema = new Schema<ICourse>({

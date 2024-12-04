@@ -256,6 +256,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     actualResult: output.output,
                     passed: output.output.trim() === testCase.expectedResult.trim(),
                 });
+
             } else {
                 const data = await response.json();
                 const token = data.token;
@@ -280,7 +281,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 }
 
                 results.push({
-                    // testCase: testCase.testCase,
+                    testCase: testCase.testCase,
                     // expectedResult: testCase.expectedResult,
                     testCaseId: testCase._id,
                     actualResult: result.stdout,
