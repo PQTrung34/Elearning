@@ -15,6 +15,7 @@ import { IQuiz, IQuizSection } from '../models/course.model';
 import fs from 'fs';
 import mammoth from 'mammoth';
 import progressModel from '../models/progress.model';
+import { time } from 'console';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -40,11 +41,18 @@ export const uploadCourse = CatchAsyncError(
         }
         sectionMap.get(section).push(video);
       });
+
  
       sectionMap.forEach((videos) => {
+        let timeQuizSection = 0;
         videos.forEach((video, index) => {
+          if (video.timeQuizSection > 0) {
+            timeQuizSection = video.timeQuizSection;
+          }
           if (index !== videos.length - 1) {
             video.quizSection = [];
+          } else {
+            video.timeQuizSection = timeQuizSection;
           }
         });
       });
@@ -96,9 +104,15 @@ export const editCourse = CatchAsyncError(
       });
  
       sectionMap.forEach((videos) => {
+        let timeQuizSection = 0;
         videos.forEach((video, index) => {
+          if (video.timeQuizSection > 0) {
+            timeQuizSection = video.timeQuizSection;
+          }
           if (index !== videos.length - 1) {
             video.quizSection = [];
+          } else {
+            video.timeQuizSection = timeQuizSection;
           }
         });
       });
