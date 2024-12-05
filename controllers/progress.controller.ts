@@ -232,10 +232,10 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
         const codeCompleted = 
             content.questionCode.testCases.length === 0  || (lessonProgress.code?.status === true);
 
-        // const isQuizSectionCompleted = 
-        //     content.quizSection.length === 0 || (lessonProgress.isQuizSectionCompleted === true);
+        const isQuizSectionCompleted = 
+            content.quizSection.length === 0 || (lessonProgress.isQuizSectionCompleted === true);
 
-        const isComplete = quizCompleted && codeCompleted;
+        const isComplete = quizCompleted && codeCompleted && isQuizSectionCompleted;
         const isActiveQuizSection = content.quizSection.length > 0 && isComplete;
         
         res.status(200).json({
