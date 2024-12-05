@@ -109,7 +109,8 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
 
             const isLessonComplete = 
                 ((contentInCourse.quiz.length === 0) || (lessonProgress.quiz.every(quiz => quiz.status) && contentInCourse?.quiz.length === lessonProgress.quiz.length)) &&
-                ((contentInCourse.questionCode.testCases.length === 0) || (lessonProgress.code?.status === true && contentInCourse?.questionCode._id.toString() === lessonProgress.code.codeId));
+                ((contentInCourse.questionCode.testCases.length === 0) || (lessonProgress.code?.status === true && contentInCourse?.questionCode._id.toString() === lessonProgress.code.codeId)) &&
+                ((contentInCourse.quizSection.length === 0) || (lessonProgress.isQuizSectionCompleted === true));
             lessonProgress.isLessonCompleted = isLessonComplete;
         }
 
