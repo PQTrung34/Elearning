@@ -236,7 +236,7 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
             content.quizSection.length === 0 || (lessonProgress.isQuizSectionCompleted === true);
 
         const isComplete = quizCompleted && codeCompleted && isQuizSectionCompleted;
-        const isActiveQuizSection = content.quizSection.length > 0 && isComplete;
+        const isActiveQuizSection = content.quizSection.length > 0 && quizCompleted && codeCompleted;
         
         res.status(200).json({
             success: true,
