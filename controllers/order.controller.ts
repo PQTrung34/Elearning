@@ -66,29 +66,6 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
             return next(new ErrorHandler(error.message,400));
         }
 
-        // let lesson = [];
-        // course.courseContent?.forEach((content: any) => {
-        //     let quizzes = [];
-        //     content.quiz?.forEach((item: any) => {
-        //         quizzes.push({
-        //             quizId: item._id,
-        //             status: false
-        //         })
-        //     })
-        //     let codes = [];
-        //     content.questionCode?.forEach((item: any) => {
-        //         codes.push({
-        //             codeId: item._id,
-        //             status: false
-        //         })
-        //     })
-        //     lesson.push({
-        //         contentId: content._id,
-        //         quiz: quizzes,
-        //         code: codes
-        //     })
-        // })
-
         const progressData = {
             courseId: courseId,
             userId: user?._id,

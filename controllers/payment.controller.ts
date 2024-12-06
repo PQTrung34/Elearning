@@ -14,86 +14,6 @@ import { newOrder } from '../services/order.service';
 import { redis } from "../utils/redis";
 import NotificationModel from '../models/notification.model';
 
-// payOS
-const PayOS = require('@payos/node');
-const payOS = new PayOS(process.env.PAYOS_CLIENT_ID, process.env.PAYOS_API_KEY,
-              process.env.PAYOS_CHECKSUM_KEY)
-
-export const createPaymentLink = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
-  try {
-    const {amount, description} = req.body;
-    const orderCode = Number(String(new Date().getTime()).slice(-6));
-    const returnUrl = 'https://dc01-171-251-212-11.ngrok-free.app/api/v1/payment-status';
-    const cancelUrl = 'https://dc01-171-251-212-11.ngrok-free.app/api/v1/cancel-payment';
-    const rawSignature = 'amount=' + amount + '&descripton=' + description + '&orderCode=' + orderCode + '&returnUrl=' + returnUrl + '&cancelUrl=' + cancelUrl;
-    const signature = crypto.createHmac('sha256', process.env.PAYOS_CHECKSUM_KEY)
-      .update(rawSignature)
-      .digest('hex');
-    const paymentInfo = {
-      amount: amount,
-      description: description,
-      orderCode: orderCode,
-      returnUrl: returnUrl,
-      cancelUrl: cancelUrl,
-      signature: signature
-    }
-
-    const paymentLink = await payOS.createPaymentLink(paymentInfo);
-    
-    res.status(200).json({
-      success: true,
-      paymentLink: paymentLink
-    })
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 400));
-  }
-})
-
-export const paymentStatus = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
-  try {
-    const order = await payOS.getPaymentLinkInformation(req.params.id);
-    if (!order) {
-      return new ErrorHandler('Order not found', 400);
-    }
-
-    res.status(200).json({
-      success: true,
-      order: order
-    })
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 400));
-  }
-})
-
-export const cancelPayment = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
-  try {
-    const cancelPayment = await payOS.cancelPaymentLink(req.params.id);
-    if (!cancelPayment) {
-      return new ErrorHandler('Order not found', 400);
-    }
-
-    res.status(200).json({
-      'success': true,
-      order: cancelPayment
-    })
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 400));
-  }
-})
-
-export const confirmWebhook = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
-  try {
-    const {webhookUrl} = req.body;
-    await payOS.confirmWebhook(webhookUrl);
-    res.status(200).json({
-      'success': true
-    })
-  } catch (error) {
-    return next(new ErrorHandler(error.message, 400));
-  }
-})
-
-// -----------------------------------------------------------------------------------
 // Momo
 // tạo link thanh toán
 export const createPayment = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
@@ -101,10 +21,74 @@ export const createPayment = CatchAsyncError(async(req: Request, res: Response, 
     const {amountInfo, description, courseId} = req.body;
     const userId = req.user?._id;
     const user = await userModel.findById(userId);
+    if (!user) {
+      console.log("User not found");
+    }
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+        console.log("Course not found");
+    }
     const courseExist = user?.courses.some((course: any) => course.courseId.toString() === courseId);
     if (courseExist) {
         return next(new ErrorHandler("You have already purchased this course",400));
     }
+
+    if (amountInfo === 0) {
+      const data:any = {
+        courseId: courseId,
+        userId: userId
+      };
+
+      const mailData = {
+        order: {
+            _id: courseId.toString().slice(0,6),
+            name: course.name,
+            price: course.price,
+            data: new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+        }
+      }
+      const html = await ejs.renderFile(path.join(__dirname, "../mails/order-confirmation.ejs"), {order: mailData});
+      try {
+        if (user) {
+          await sendMailUtil({
+              email: user.email,
+              subject: "Order Confimation",
+              template: "order-confirmation.ejs",
+              data: mailData
+          });
+        }
+      } catch (error) {
+          return next(new ErrorHandler(error.message,400));
+      }
+
+      const progressData = {
+        courseId: courseId,
+        userId: user?._id,
+        lesson: [],
+        isCompleted: false,
+      }
+
+      user.courses.push({courseId});
+      await progressModel.create(progressData);
+      await redis.set(req.user?._id, JSON.stringify(user));
+      await user.save();
+      const notification = await NotificationModel.create({
+          user: userId,
+          title: "New Order",
+          message: `You have a new order from ${course?.name}`
+      });
+      
+      course.purchased = course.purchased + 1;
+      await course.save();
+      console.log('Thanh toán thành công');
+      newOrder(data, res, next);
+      res.status(200).json({
+        'success': true,
+        data: 'Free course'
+      })
+      return;
+    }
+
     //parameters
     const accessKey = process.env.MOMO_ACCESS_KEY;
     const secretKey = process.env.MOMO_SECRET_KEY;
@@ -181,9 +165,6 @@ export const checkPayment = CatchAsyncError(async(req: Request, res: Response, n
   try {
     console.log('check payment');
     console.log(req.body);
-    // res.status(200).json({
-    //   data: req.body
-    // })
 
     const resultCode = req.body.resultCode;
     const courseId = req.body.extraData.split(',')[0];
@@ -191,17 +172,11 @@ export const checkPayment = CatchAsyncError(async(req: Request, res: Response, n
     const user = await userModel.findById(userId);
     if (!user) {
       console.log("User not found");
-      // return next(new ErrorHandler("User not found",400));
     }
-    // const courseExist = user?.courses.some((course: any) => course._id.toString === courseId);
-    // if (courseExist) {
-    //     return next(new ErrorHandler("You have already purchased this course",400));
-    // }
 
     const course = await CourseModel.findById(courseId);
     if (!course) {
         console.log("Course not found");
-        // return next(new ErrorHandler("Course not found",400));
     }
     if (resultCode === 0) {
       const data:any = {
@@ -210,34 +185,34 @@ export const checkPayment = CatchAsyncError(async(req: Request, res: Response, n
       };
 
       const mailData = {
-          order: {
-              _id: courseId.toString().slice(0,6),
-              name: course.name,
-              price: course.price,
-              data: new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
-          }
+        order: {
+            _id: courseId.toString().slice(0,6),
+            name: course.name,
+            price: course.price,
+            data: new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+        }
       }
       const html = await ejs.renderFile(path.join(__dirname, "../mails/order-confirmation.ejs"), {order: mailData});
       try {
         if (user) {
-            await sendMailUtil({
-                email: user.email,
-                subject: "Order Confimation",
-                template: "order-confirmation.ejs",
-                data: mailData
-            });
+          await sendMailUtil({
+              email: user.email,
+              subject: "Order Confimation",
+              template: "order-confirmation.ejs",
+              data: mailData
+          });
         }
       } catch (error) {
           return next(new ErrorHandler(error.message,400));
       }
-      // console.log('Gửi mail')
+
       const progressData = {
         courseId: courseId,
         userId: user?._id,
         lesson: [],
         isCompleted: false,
     }
-      // console.log('Progress')
+
       user.courses.push({courseId});
       await progressModel.create(progressData);
       await redis.set(req.user?._id, JSON.stringify(user));
@@ -253,14 +228,9 @@ export const checkPayment = CatchAsyncError(async(req: Request, res: Response, n
       console.log('Thanh toán thành công');
       newOrder(data, res, next);
       
-      // res.status(200).json({
-      //   'success': true,
-      //   'message': "Purchase successfully"
-      // })
     }
     else {
       console.log('Thanh toán thất bại');
-      // return next(new ErrorHandler('Purchase failed', 400));
     }
   }
   catch (error) {

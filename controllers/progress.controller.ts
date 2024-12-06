@@ -164,6 +164,13 @@ export const getProgress = CatchAsyncError(async (req: Request, res: Response, n
                 lesson: [],
                 isCompleted: false,
             });
+            // const progressData = {
+            //     courseId: courseId,
+            //     userId: userId,
+            //     lesson: [],
+            //     isCompleted: false,
+            // }
+            // await progressModel.create(progressData);
         }
 
         let lastLesson;
@@ -174,7 +181,7 @@ export const getProgress = CatchAsyncError(async (req: Request, res: Response, n
 
             const firstContent = course.courseContent[0];
             const newLesson = {
-                contentId: firstContent._id.toString(),
+                contentId: firstContent._id as string,
                 quiz: [],
                 code: undefined,
                 order: 1,

@@ -24,6 +24,7 @@ export const getAllOrdersService = async(res: Response) => {
                 ...order.toObject(), // Chuyển Mongoose document thành object thông thường
                 coursePrice: course?.price || null,
                 userName: user?.name || "Unknown User",
+                courseName:course?.name||'Unknown Course',
             };
         })
     );
