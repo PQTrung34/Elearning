@@ -415,6 +415,13 @@ export const addReview = CatchAsyncError(
           return next(new ErrorHandler('You must complete course first before review', 400));
       }
 
+      const isReviewExist = course?.reviews?.some(
+        (rev: any) => rev.user._id.toString() === userId
+      )
+      if (isReviewExist) {
+        return next(new ErrorHandler('You have already reviewed this course', 400));
+      }
+
       const reviewData: any = {
         user: req.user,
         comment: review,
@@ -694,6 +701,16 @@ const shuffle = (quizSection: IQuizSection[]): IQuizSection[] => {
   });
 };
 
+const shuffleArray = (array: any[]): any[] => {
+  const shuffled = [...array]; // Tạo một bản sao để không làm thay đổi mảng gốc
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const randomIndex = Math.floor(Math.random() * (i + 1)); // Chọn ngẫu nhiên một chỉ số từ 0 đến i
+    // Hoán đổi phần tử hiện tại với phần tử tại randomIndex
+    [shuffled[i], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[i]];
+  }
+  return shuffled;
+};
+
 // Controller để xử lý tệp upload
 export const reviewQuiz = async (req, res) => {
   try {
@@ -749,6 +766,7 @@ export const shuffleQuizInDatabase = CatchAsyncError(
 
       if (content.quizSection) {
         content.quizSection = shuffle(content.quizSection)
+        content.quizSection = shuffleArray(content.quizSection)
       }
       await course.save();
 
@@ -777,25 +795,16 @@ export const shuffleQuestion = CatchAsyncError(
     }
 })
 
-const shuffleArray = (array: any[]): any[] => {
-  const shuffled = [...array]; // Tạo một bản sao để không làm thay đổi mảng gốc
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const randomIndex = Math.floor(Math.random() * (i + 1)); // Chọn ngẫu nhiên một chỉ số từ 0 đến i
-    // Hoán đổi phần tử hiện tại với phần tử tại randomIndex
-    [shuffled[i], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[i]];
-  }
-  return shuffled;
-};
-
 export const shuffleQuiz = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const {data} = req.body;
-      const shuffleData = shuffleArray(data);
- 
-      res.status(200).json({
-        'success': true,
-        shuffleData
-      })
+    const data = req.body;
+    const shuffleData = shuffle(data);
+    const results = shuffleArray(shuffleData);
+
+    res.status(200).json({
+      'success': true,
+      results
+    })
   } catch (error) {
     return next(new ErrorHandler(error.message, 400));
   }

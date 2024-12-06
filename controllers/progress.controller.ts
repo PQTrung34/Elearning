@@ -43,16 +43,20 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             const code: ICodeProgress = codeId ? { codeId:codeId, status:codeStatus } : undefined;
             // Tìm giá trị order lớn nhất trong lesson để thêm bài học mới
             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
-            
+
             const countQuiz = quizId ? quizStatus ? 1 : 0 : 0;
             const countCode = codeId ? codeStatus ? 1 : 0 : 0;
 
             const totalQuiz = contentInCourse.quiz.length || 0;
-            const totalCode = contentInCourse.questionCode.testCases.length || 0;
+            const totalCode = contentInCourse.questionCode.testCases.length > 0 ? 1 : 0;
+
+            const isQuizSectionCompleted = contentInCourse.quizSection.length === 0 || 
+                (quizSectionStatus === true);
 
             const isComplete = 
                 (countQuiz === totalQuiz || totalQuiz === 0) &&
-                (countCode === totalCode || totalCode === 0);
+                (countCode === totalCode || totalCode === 0) &&
+                isQuizSectionCompleted;
 
             const newLesson: ILessonProgress = {
                 contentId: contentId,
@@ -70,7 +74,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
 
             if (quizSectionStatus === true || quizSectionStatus === false) {
                 newLesson.isQuizSectionCompleted = quizSectionStatus || contentInCourse.quizSection.length === 0;
-            }
+            };
 
             progress.lesson.push(newLesson);
 
