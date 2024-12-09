@@ -292,7 +292,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
 
         // thêm results vào codeprogress
         const codeProgress: ICodeProgress = {
-            codeId: content.questionCode._id.toString(),
+            codeId: content.questionCode._id as string,
             status: results.every((result) => result.passed),
         };
 

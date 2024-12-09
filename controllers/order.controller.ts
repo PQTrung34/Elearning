@@ -29,7 +29,7 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
             }
         }
         const user = await userModel.findById(req.user?._id);
-        const courseExist = user?.courses.some((course: any) => course.courseId.toString() === courseId);
+        const courseExist = user?.courses.some((course: any) => course.courseId === courseId);
         if (courseExist) {
             return next(new ErrorHandler("You have already purchased this course",400));
         }
@@ -46,10 +46,10 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
 
         const mailData = {
             order: {
-                _id: course._id.toString().slice(0,6),
+                _id: courseId.slice(0,6),
                 name: course.name,
                 price: course.price,
-                data: new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
+                date: new Date().toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})
             }
         }
         const html = await ejs.renderFile(path.join(__dirname, "../mails/order-confirmation.ejs"), {order: mailData});
