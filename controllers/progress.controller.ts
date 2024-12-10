@@ -118,10 +118,11 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
                         codeId: codeId,
                         status: codeStatus
                     }
-                    lessonProgress.code = newCode;
+                        lessonProgress.code = newCode;
                 } 
                 else {
                     code.status = codeStatus;
+                    lessonProgress.isLessonCompleted = codeStatus && contentInCourse.quiz.length;
                 }
             }
 

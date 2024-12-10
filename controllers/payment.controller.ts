@@ -97,9 +97,9 @@ export const createPayment = CatchAsyncError(async(req: Request, res: Response, 
     const orderInfo = description;
     const partnerCode = process.env.MOMO_PARTNER_CODE;
     // const redirectUrl = 'https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b'; // link web
-    const redirectUrl = 'https://google.com'; // link chuyển hướng sau khi thanh toán thành công
+    const redirectUrl = `http://localhost:3000/course/${courseId}`; // link chuyển hướng sau khi thanh toán thành công
     // public locallhost:8000 = ngrok
-    const ipnUrl = 'https://c5f3-171-251-212-11.ngrok-free.app/api/v1/check-payment'; // public localhost = ngrok
+    const ipnUrl = 'https://1fe0-171-251-212-26.ngrok-free.app/api/v1/check-payment'; // public localhost = ngrok
     const requestType = "payWithMethod";
     const amount = amountInfo;
     const orderId = partnerCode + new Date().getTime();
