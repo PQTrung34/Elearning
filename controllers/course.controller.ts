@@ -328,7 +328,7 @@ export const addAnswer = CatchAsyncError(
 
       await course?.save();
 
-      if (req.user?._id === question.user._id) {
+      if (req.user?._id.toString() === question.user._id.toString()) {
         // notify
         await NotificationModel.create({
           user: req.user?._id,
@@ -401,7 +401,7 @@ export const addReview = CatchAsyncError(
 
       const isQuizSectionCompleted = course.courseContent.every(async (content: any) => {
           if (!content.quizSection) return true;
-          const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId === content._id.toString());
+          const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId.toString() === content._id.toString());
           if (lessonProgress && lessonProgress.isQuizSectionCompleted) return lessonProgress.isQuizSectionCompleted;
           return false;
       })

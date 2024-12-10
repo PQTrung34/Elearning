@@ -122,7 +122,6 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
                 } 
                 else {
                     code.status = codeStatus;
-                    lessonProgress.isLessonCompleted = codeStatus && contentInCourse.quiz.length;
                 }
             }
 

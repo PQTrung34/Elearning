@@ -1,186 +1,138 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: "Poppins" sans-serif;
-            background-color: #f4f4f4;
+            font-family: "Poppins", sans-serif;
+            background-color: #f8f9fa;
             margin: 0;
             padding: 0;
+            color: #333;
         }
         .container {
             max-width: 600px;
-            height: 100vh;
-            margin: 0 auto;
+            margin: 30px auto;
             padding: 20px;
             background-color: #4f5ef1;
-            box-shadow: 0 4px rgba(0, 0, 0, 0.1);
-            color: #FFFFFF;
-        }
-        .message {
-            text-align: center;
-            font-size: 18px;
-            margin-bottom: 20px;
-            padding-top: 50px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            color: #fff;
         }
         .message-sm {
             text-align: center;
             font-size: 18px;
             margin-bottom: 20px;
-            padding-top: 50px;
+            color: white;
         }
         .message-sm > h1 {
-            text-align: center;
-            font-size: 25px;
+            font-size: 26px;
             font-weight: 600;
+            margin-bottom: 10px;
+            color: white;
+        }
+        .message-sm > p {
+            font-size: 16px;
+            margin-top: 0;
+            color: white;
         }
         .course-info {
-            margin: auto;
-            padding: 20px 0px;
-            width: 100%;
             background-color: #fff;
             border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 2px 2px 2px 2px rgba(206, 197, 197, 0.1);
-            color: #000;
+            padding: 20px;
+            margin: 20px 0;
+            color: #333;
+            box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
         }
         .course-info > h4 {
-            color: #23bd70;
-            font-size: 22px;
-            font-family: "Poppins", sans-serif;
-            font-weight: 500;
+            font-size: 20px;
+            font-weight: 600;
+            color: #4f5ef1;
+            margin-bottom: 20px;
             text-align: center;
-            padding: 0 !important;
-            margin-top: 0 !important;
-        }
-        .course-name {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        .purchase-info {
-            font-size: 16px;
-        }
-        .total {
-            font-size: 18px;
-            text-align: right;
-            margin-top: 20px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 100px;
-            color: #fff;
-        }
-        .footer > p > a {
-            text-decoration: none;
-            display: inline-block;
-            color: #fff;
-        }
-        .flex {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #9999993f;
-        }
-        .flex h4 {
-            font-weight: 400;
-            margin-bottom: 5px;
-        }
-        .flex.lg {
-            width: 85%;
-            margin: auto;
-            border-bottom: none;
-        }
-        .first-td {
-            text-transform: uppercase;
-            color: #0000006c;
-            font-size: 16px;
-            padding: 5px 0px;
-            width: 1%;
-        }
-        .first-td {
-            font-weight: 600 !important;
-        }
-        .second-td {
-            font-weight: 500 !important;
-            color: #000000af;
-            font-size: 15px;
-        }
-        .title {
-            font-size: 16px !important;
         }
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-bottom: 15px;
         }
-        td {
+        table th, table td {
             padding: 10px;
             text-align: center;
-            width: 28.33%;
+            font-size: 15px;
         }
-        td.col-2 {
-            width: 100%;
-            text-align: left;
-            padding: 0px;
-            margin: 0;
+        table th {
+            text-transform: uppercase;
+            color: #555;
+            font-weight: 500;
+            background-color: #f4f4f4;
         }
-        .m-auto {
-            width: 100%;
-            margin: auto;
+        table td {
+            color: #333;
         }
-        .table-row {
-            width: 70%;
-            display: block;
-            margin: auto;
+        .total-row {
+            font-size: 16px;
+            font-weight: 600;
+            text-align: right;
             padding: 10px 0;
+            border-top: 1px solid #eee;
+        }
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            margin-top: 20px;
+            color: #ddd;
+        }
+        .footer a {
+            color: #fff;
+            text-decoration: underline;
+        }
+        .footer > p {
+            margin: 5px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="message-sm">
-            <h1>Your Elearning order is comfirmed!</h1>
-            <p>And we're just as excited as you are</p>
+            <h1>Your Elearning Order is Confirmed!</h1>
+            <p>We're just as excited as you are 🎉</p>
         </div>
-        <br><br>
         <div class="course-info">
-            <h4>Here's what you ordered</h4>
-            <table style="border-bottom: 1px solid #0000002f;">
+            <h4>Here's What You Ordered</h4>
+            <table>
                 <tr>
-                    <td>Order #: <%= order._id %></td>
-                    <td>Order date: <%= order.date %></td>
+                    <td><strong>Order #:</strong> <%= order._id %></td>
+                    <td><strong>Order Date:</strong> <%= order.date %></td>
                 </tr>
             </table>
-            <table style="width: 90%; margin: auto; display: block;">
-                <tr>
-                    <td class="first-td">Item</td>
-                    <td class="first-td">Quantity</td>
-                    <td class="first-td">Cost</td>
-                </tr>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Quantity</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><%= order.name %></td>
+                        <td>1</td>
+                        <td><%= order.price %>₫</td>
+                    </tr>
+                </tbody>
             </table>
-            <table style="width: 90%; margin: auto; border-collapse: collapse">
-                <tr>
-                    <td class="second-td"><%= order.name %></td>
-                    <td class="second-td">1</td>
-                    <td class="second-td">$<%= order.price %></td>
-                </tr>
-            </table>
-            <table class="table-row" style="border-top: 1px solid #100e0e29;">
-                <tr>
-                    <td class="col-2">Subtotal:</td>
-                    <td class="col-2">$<%= order.price %></td>
-                </tr>
-            </table>
-            <table class="table-row" style="margin-top: -20px;">
-                <td class="col-2">Total:</td>
-                <td class="col-2">$<%= order.price %></td>
-            </table>
+            <div class="total-row">
+                <p><strong>Subtotal:</strong> <%= order.price %>₫</p>
+                <p><strong>Total:</strong> <%= order.price %>₫</p>
+            </div>
         </div>
         <div class="footer">
-            <p>if you have any questions, please contact our support team at <a href="mailto:support@elearning.com">support@elearning.com</a></p>
-            <p>&copy; 2024 Elearning. All right reserved</p>
+            <p>If you have any questions, please contact our support team at <a href="mailto:support@elearning.com">support@elearning.com</a></p>
+            <p>&copy; 2024 Elearning. All rights reserved.</p>
         </div>
     </div>
 </body>
