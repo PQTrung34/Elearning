@@ -28,7 +28,7 @@ export const createPayment = CatchAsyncError(async(req: Request, res: Response, 
     if (!course) {
         console.log("Course not found");
     }
-    const courseExist = user?.courses.some((course: any) => course.courseId === courseId);
+    const courseExist = user?.courses.some((course: any) => course.courseId.toString() === courseId);
     if (courseExist) {
         return next(new ErrorHandler("You have already purchased this course",400));
     }

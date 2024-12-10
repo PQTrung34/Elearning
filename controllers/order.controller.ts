@@ -29,7 +29,7 @@ export const createOrder = CatchAsyncError(async(req: Request, res: Response, ne
             }
         }
         const user = await userModel.findById(req.user?._id);
-        const courseExist = user?.courses.some((course: any) => course.courseId === courseId);
+        const courseExist = user?.courses.some((course: any) => course.courseId.toString() === courseId);
         if (courseExist) {
             return next(new ErrorHandler("You have already purchased this course",400));
         }

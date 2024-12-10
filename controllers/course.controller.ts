@@ -210,7 +210,7 @@ export const getCourseByUser = CatchAsyncError(
       const userCourseList = req.user?.courses;
       const courseId = req.params.id;
       const courseExist = userCourseList?.find(
-        (course: any) => course.courseId === courseId
+        (course: any) => course.courseId.toString() === courseId
       );
       if (!courseExist) {
         return next(
@@ -247,7 +247,7 @@ export const addQuestion = CatchAsyncError(
       console.log(course);
       console.log(question, courseId, contentId);
       const courseContent = course?.courseContent.find((item: any) =>
-        item._id.toString() === contentId
+        item._id.equals(contentId)
       );
       if (!courseContent) {
         return next(new ErrorHandler('Invalid content id', 400));
@@ -303,14 +303,14 @@ export const addAnswer = CatchAsyncError(
       }
 
       const courseContent = course?.courseContent.find((item: any) =>
-        item._id.toString() === contentId
+        item._id.equals(contentId)
       );
       if (!courseContent) {
         return next(new ErrorHandler('Invalid content id', 400));
       }
 
       const question = courseContent?.questions?.find((item: any) =>
-        item._id.toString() === questionId
+        item._id.equals(questionId)
       );
       if (!question) {
         return next(new ErrorHandler('Invalid question id', 400));
@@ -328,7 +328,7 @@ export const addAnswer = CatchAsyncError(
 
       await course?.save();
 
-      if (req.user?._id.toString() === question.user._id.toString()) {
+      if (req.user?._id === question.user._id) {
         // notify
         await NotificationModel.create({
           user: req.user?._id,
@@ -765,10 +765,8 @@ export const shuffleQuizInDatabase = CatchAsyncError(
       }
 
       if (content.quizSection) {
-        const data = content.quizSection;
-        const shuffleData = shuffle(data);
-        const results = shuffleArray(shuffleData);
-        content.quizSection = results
+        content.quizSection = shuffle(content.quizSection)
+        content.quizSection = shuffleArray(content.quizSection)
       }
       await course.save();
 

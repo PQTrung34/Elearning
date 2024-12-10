@@ -21,7 +21,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             return next(new ErrorHandler('User not found', 404));
         }
 
-        const courseExist = user.courses.some((course: any) => course.courseId === courseId);
+        const courseExist = user.courses.some((course: any) => course.courseId.toString() === courseId);
         if (!courseExist) {
             return next(new ErrorHandler('You have not purchased this course', 400));
         }
@@ -47,7 +47,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             return next(new ErrorHandler('Progress not found', 404));
         }
 
-        const lessonProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
+        const lessonProgress = progress.lesson.find((lesson) => lesson.contentId.toString() === contentId);
         if (!lessonProgress) {
             console.log('Vào phần chưa có lessonProgress');
             const quiz: IQuizProgress[] = quizId ? [{ quizId:quizId, status:quizStatus }] : [];
@@ -142,7 +142,7 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
         // cập nhật complete tổng của course
         const isQuizSectionCompleted = course.courseContent.every(async (content: any) => {
             if (content.quizSection.length === 0) return true;
-            const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId === content._id.toString());
+            const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId.toString() === content._id.toString());
             if (lessonProgress && lessonProgress.isQuizSectionCompleted) return lessonProgress.isQuizSectionCompleted;
             return false;
         });
@@ -176,7 +176,7 @@ export const getProgress = CatchAsyncError(async (req: Request, res: Response, n
             return next(new ErrorHandler('Course not found', 404));
         }
 
-        const courseExist = user?.courses.some((course: any) => course.courseId === courseId);
+        const courseExist = user?.courses.some((course: any) => course.courseId.toString() === courseId);
         if (!courseExist) {
             return next(new ErrorHandler('You have not purchased this course', 400));
         }
@@ -240,7 +240,7 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
             return next(new ErrorHandler('Course not found', 404));
         }
 
-        const courseExist = user.courses.some((course: any) => course.courseId === courseId);
+        const courseExist = user.courses.some((course: any) => course.courseId.toString() === courseId);
         if (!courseExist) {
             return next(new ErrorHandler('You have not purchased this course', 400));
         }
@@ -255,7 +255,7 @@ export const isLessonComplete = CatchAsyncError(async (req: Request, res: Respon
             return next(new ErrorHandler('Progress not found', 404));
         }
 
-        const lessonProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
+        const lessonProgress = progress.lesson.find((lesson) => lesson.contentId.toString() === contentId);
         if (!lessonProgress) {
             return next(new ErrorHandler('Lesson progress not found', 404));
         }
@@ -300,7 +300,7 @@ export const isCourseComplete = CatchAsyncError(async(req: Request, res: Respons
             return next(new ErrorHandler('Course not found', 404));
         }
 
-        const courseExist = user.courses.some((course: any) => course.courseId === courseId);
+        const courseExist = user.courses.some((course: any) => course.courseId.toString() === courseId);
         if (!courseExist) {
             return next(new ErrorHandler('You have not purchased this course', 400));
         }
@@ -312,7 +312,7 @@ export const isCourseComplete = CatchAsyncError(async(req: Request, res: Respons
 
         const isQuizSectionCompleted = course.courseContent.every(async (content: any) => {
             if (!content.quizSection) return true;
-            const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId === content._id.toString());
+            const lessonProgress = await progress.lesson.find((lesson) => lesson.contentId.toString() === content._id.toString());
             if (lessonProgress && lessonProgress.isQuizSectionCompleted) return lessonProgress.isQuizSectionCompleted;
             return false;
         })
