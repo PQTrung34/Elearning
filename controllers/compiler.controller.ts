@@ -142,7 +142,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
             .split('\n')
             .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
             .join('\n');
-            const response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
+            const judge0Response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
                 method: 'POST',
                 headers: {
                     'content-type': 'application/json',
@@ -157,22 +157,20 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     stdin: stdin
                 }),
             });
-            if (response.status === 429) {
-                console.error('API rate limit exceeded');
-                console.log('Chạy vào jdoodle');
-
+            if (judge0Response.status === 429) {
+                // Nếu Judge0 limit
                 const program = {
                     script : code,
-                    stdin: testCase.testCase,
+                    stdin: stdin,
                     language: language,
                     versionIndex: "0",
                     clientId: process.env.JDOODLE_CLIENTID,
                     clientSecret: process.env.JDOODLE_SECRET,
                 }
                 if (language === 'python') {
-                    program.language = 'python3'
+                    program.language = 'python3';
                 }
-   
+
                 const Jdoodle_response = await fetch('https://api.jdoodle.com/v1/execute', {
                     method: 'POST',
                     headers: {
@@ -180,26 +178,56 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     },
                     body: JSON.stringify(program),
                 });
-   
-                if (Jdoodle_response.status !== 200) {
-                    return next(new ErrorHandler('Compiler error', 400));
+
+                let output = await Jdoodle_response.json();
+                if (output.statusCode === 429){
+                    // Nếu Jdoodle limit
+                    console.log('Chạy vào piston');
+                    const pistonResponse = await fetch('https://emkc.org/api/v2/piston/execute', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            language: language,
+                            version: '*', // hoặc phiên bản cụ thể
+                            files: [{ content: code }],
+                            stdin: stdin,
+                            compile_timeout: 10000,
+                            run_timeout: 3000,
+                            compile_memory_limit: -1,
+                            run_memory_limit: -1
+                        })
+                    });
+        
+                    let output = await pistonResponse.json();
+                    if (output.run.stderr) {
+                        return next(new ErrorHandler(output.run.stderr.split(',').slice(1).join(' ').trim(), 400));
+                    }
+                    results.push({
+                        testCaseId: testCase._id,
+                        actualResult: output.run.stdout,
+                        passed: output.run.stdout.trim() === testCase.expectedResult.trim(),
+                    });
                 }
-                const output = await response.json();
-                if (!output.isExecutionSuccess) {
-                    return next(new ErrorHandler(output.output.trim(), 400));
+                else {
+                    console.log('Chạy vào Jdoodle');
+                    if (!output.isExecutionSuccess) {
+                        return next(new ErrorHandler(output.output.trim(), 400));
+                    }
+
+                    results.push({
+                        testCaseId: testCase._id,
+                        actualResult: output.output,
+                        passed: output.output.trim() === testCase.expectedResult.trim(),
+                    });
                 }
- 
-                results.push({
-                    testCaseId: testCase._id,
-                    actualResult: output.output,
-                    passed: output.output.trim() === testCase.expectedResult.trim(),
-                });
- 
+
             } else {
                 console.log('Chạy vào Judge0');
-                const data = await response.json();
+                const data = await judge0Response.json();
                 const token = data.token;
-                let result;
+                let output
                 const maxAttempts = 10;
                 for (let i = 0; i < maxAttempts; i++) {
                     const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
@@ -209,25 +237,23 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                         },
                     });
  
-                    result = await resultResponse.json();
-                    if (result.status.id > 2) break;
+                    output = await resultResponse.json();
+                    if (output.status.id > 2) break;
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
  
-                if (!result) {
+                if (!output) {
                     results.push({ testCase: testCases.testCases, error: 'Timeout' });
                     continue;
                 }
-                if (result.stderr) {
-                    return next(new ErrorHandler(result.stderr.trim(), 400));
+                if (output.stderr) {
+                    return next(new ErrorHandler(output.stderr.trim(), 400));
                 }
 
                 results.push({
-                    testCase: testCase.testCase,
-                    // expectedResult: testCase.expectedResult,
                     testCaseId: testCase._id,
-                    actualResult: result.stdout,
-                    passed: result.stdout.trim() === testCase.expectedResult.trim(),
+                    actualResult: output.stdout,
+                    passed: output.stdout.trim() === testCase.expectedResult.trim(),
                 });
             }
         }
@@ -261,9 +287,9 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 lessonProgress.code = codeProgress;
             }
             const hasQuiz = content.quiz.length > 0 ? true : false;
-            const isQuizCompleted = (!hasQuiz) ||
-                (hasQuiz && lessonProgress.quiz.length == 0) ||
-                (hasQuiz && lessonProgress.quiz.every(quiz => quiz.status));
+            const isQuizCompleted = (!hasQuiz) || // không có quiz -> true
+                (hasQuiz && lessonProgress.quiz.length != 0) || // có quiz và chưa làm
+                (hasQuiz && lessonProgress.quiz.length == content.quiz.length && lessonProgress.quiz.every(quiz => quiz.status)); // có quiz và đã làm
             const isQuizSectionCompleted = content.quizSection.length > 0 ? (lessonProgress.isQuizSectionCompleted ? lessonProgress.isQuizSectionCompleted : false) : true;
             console.log('isQuizCompleted', isQuizCompleted);
             console.log('isQuizSectionCompleted', isQuizSectionCompleted);
@@ -304,13 +330,32 @@ export const executeJdoodle = CatchAsyncError(async (req: Request, res: Response
        
         const results = []
         for (const testCase of testCases.testCases) {
+            const creditSpent = await fetch('https://api.jdoodle.com/v1/credit-spent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    clientId: process.env.JDOODLE_CLIENTID,
+                    clientSecret: process.env.JDOODLE_SECRET,
+                }),
+            });
+            const credit = await creditSpent.json();
+            console.log(credit.used)
+            const stdin = testCase.testCase
+            .split('\n')
+            .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
+            .join('\n');
             const program = {
                 script : code,
-                stdin: testCase.testCase,
+                stdin: stdin,
                 language: language,
                 versionIndex: "0",
                 clientId: process.env.JDOODLE_CLIENTID,
                 clientSecret: process.env.JDOODLE_SECRET,
+            }
+            if (language === 'python') {
+                program.language = 'python3'
             }
  
             const response = await fetch('https://api.jdoodle.com/v1/execute', {
@@ -369,6 +414,10 @@ export const executePiston = CatchAsyncError(async (req: Request, res: Response,
        
         const results = []
         for (const testCase of testCases.testCases) {
+            const stdin = testCase.testCase
+            .split('\n')
+            .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
+            .join('\n');
             const response = await fetch('https://emkc.org/api/v2/piston/execute', {
                 method: 'POST',
                 headers: {
@@ -378,7 +427,7 @@ export const executePiston = CatchAsyncError(async (req: Request, res: Response,
                     language: language,
                     version: '*', // hoặc phiên bản cụ thể
                     files: [{ content: code }],
-                    stdin: testCase.testCase,
+                    stdin: stdin,
                     compile_timeout: 10000,
                     run_timeout: 3000,
                     compile_memory_limit: -1,
@@ -387,7 +436,8 @@ export const executePiston = CatchAsyncError(async (req: Request, res: Response,
             });
 
             const result = await response.json();
-            // console.log(result);
+            console.log(result);
+            console.log('--------------------------')
             if (result.run.stderr) {
                 return next(new ErrorHandler(result.run.stderr.split(',').slice(1).join(' ').trim(), 400));
             }
@@ -427,9 +477,9 @@ export const executePiston = CatchAsyncError(async (req: Request, res: Response,
                 lessonProgress.code = codeProgress;
             }
             const hasQuiz = content.quiz.length > 0 ? true : false;
-            const isQuizCompleted = (!hasQuiz) ||
-                (hasQuiz && lessonProgress.quiz.length == 0) ||
-                (hasQuiz && lessonProgress.quiz.every(quiz => quiz.status));
+            const isQuizCompleted = (!hasQuiz) || // không có quiz -> true
+                (hasQuiz && lessonProgress.quiz.length != 0) || // có quiz và chưa làm
+                (hasQuiz && lessonProgress.quiz.length == content.quiz.length && lessonProgress.quiz.every(quiz => quiz.status)); // có quiz và đã làm
             const isQuizSectionCompleted = content.quizSection.length > 0 ? (lessonProgress.isQuizSectionCompleted ? lessonProgress.isQuizSectionCompleted : false) : true;
             console.log('isQuizCompleted', isQuizCompleted);
             console.log('isQuizSectionCompleted', isQuizSectionCompleted);
