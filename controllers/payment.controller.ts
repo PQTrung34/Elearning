@@ -13,6 +13,7 @@ import path from 'path';
 import { newOrder } from '../services/order.service';
 import { redis } from "../utils/redis";
 import NotificationModel from '../models/notification.model';
+import OrderModel from '../models/order.model';
 
 // Momo
 // tạo link thanh toán
@@ -81,12 +82,13 @@ export const createPayment = CatchAsyncError(async(req: Request, res: Response, 
       course.purchased = course.purchased + 1;
       await course.save();
       console.log('Thanh toán thành công');
-      newOrder(data, res, next);
+      await OrderModel.create(data);
       res.status(200).json({
         'success': true,
-        data: 'Free course',
-        payUrl: `http://localhost:3000/course/${courseId}`,
-        shortLink: `http://localhost:3000/course/${courseId}`,
+        data: {
+          payUrl: `http://localhost:3000/course/${courseId}`,
+          shortLink: `http://localhost:3000/course/${courseId}`,
+        },
       })
       return;
     }

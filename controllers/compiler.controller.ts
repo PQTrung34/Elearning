@@ -206,6 +206,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     }
                     results.push({
                         testCaseId: testCase._id,
+                        testCase: testCase.testCase,
                         actualResult: output.run.stdout,
                         passed: output.run.stdout.trim() === testCase.expectedResult.trim(),
                     });
@@ -218,6 +219,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
 
                     results.push({
                         testCaseId: testCase._id,
+                        testCase: testCase.testCase,
                         actualResult: output.output,
                         passed: output.output.trim() === testCase.expectedResult.trim(),
                     });
@@ -252,6 +254,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
 
                 results.push({
                     testCaseId: testCase._id,
+                    testCase: testCase.testCase,
                     actualResult: output.stdout,
                     passed: output.stdout.trim() === testCase.expectedResult.trim(),
                 });
