@@ -201,6 +201,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     });
         
                     let output = await pistonResponse.json();
+                    // lỗi code của piston
                     if (output.run.stderr) {
                         return next(new ErrorHandler(output.run.stderr.split(',').slice(1).join(' ').trim(), 400));
                     }
@@ -213,8 +214,9 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 }
                 else {
                     console.log('Chạy vào Jdoodle');
+                    // lỗi code của Jdoodle
                     if (!output.isExecutionSuccess) {
-                        return next(new ErrorHandler(output.output.trim(), 400));
+                        return next(new ErrorHandler(output.output.split(',').slice(1).join(' ').trim(), 400));
                     }
 
                     results.push({
@@ -248,8 +250,9 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     results.push({ testCase: testCases.testCases, error: 'Timeout' });
                     continue;
                 }
+                // lỗi code của Judge0
                 if (output.stderr) {
-                    return next(new ErrorHandler(output.stderr.trim(), 400));
+                    return next(new ErrorHandler(output.stderr.split(',').slice(1).join(' ').trim(), 400));
                 }
 
                 results.push({
@@ -310,191 +313,191 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
     }
 })
  
-// test jdoodle
-export const executeJdoodle = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const {courseId,contentId, code, language} = req.body;
-        const userId = req.user?._id;
+// // test jdoodle
+// export const executeJdoodle = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         const {courseId,contentId, code, language} = req.body;
+//         const userId = req.user?._id;
  
-        const course = await CourseModel.findById(courseId);
-        if (!course) {
-            return next(new ErrorHandler('Course not found', 400));
-        }
+//         const course = await CourseModel.findById(courseId);
+//         if (!course) {
+//             return next(new ErrorHandler('Course not found', 400));
+//         }
  
-        const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
-        if (!content) {
-            return next(new ErrorHandler('Content not found', 400));
-        }
+//         const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+//         if (!content) {
+//             return next(new ErrorHandler('Content not found', 400));
+//         }
  
-        const testCases = content.questionCode;
-        if (!testCases) {
-            return next(new ErrorHandler('Test case not found', 400));
-        }
+//         const testCases = content.questionCode;
+//         if (!testCases) {
+//             return next(new ErrorHandler('Test case not found', 400));
+//         }
        
-        const results = []
-        for (const testCase of testCases.testCases) {
-            const creditSpent = await fetch('https://api.jdoodle.com/v1/credit-spent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    clientId: process.env.JDOODLE_CLIENTID,
-                    clientSecret: process.env.JDOODLE_SECRET,
-                }),
-            });
-            const credit = await creditSpent.json();
-            console.log(credit.used)
-            const stdin = testCase.testCase
-            .split('\n')
-            .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
-            .join('\n');
-            const program = {
-                script : code,
-                stdin: stdin,
-                language: language,
-                versionIndex: "0",
-                clientId: process.env.JDOODLE_CLIENTID,
-                clientSecret: process.env.JDOODLE_SECRET,
-            }
-            if (language === 'python') {
-                program.language = 'python3'
-            }
+//         const results = []
+//         for (const testCase of testCases.testCases) {
+//             const creditSpent = await fetch('https://api.jdoodle.com/v1/credit-spent', {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//                 body: JSON.stringify({
+//                     clientId: process.env.JDOODLE_CLIENTID,
+//                     clientSecret: process.env.JDOODLE_SECRET,
+//                 }),
+//             });
+//             const credit = await creditSpent.json();
+//             console.log(credit.used)
+//             const stdin = testCase.testCase
+//             .split('\n')
+//             .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
+//             .join('\n');
+//             const program = {
+//                 script : code,
+//                 stdin: stdin,
+//                 language: language,
+//                 versionIndex: "0",
+//                 clientId: process.env.JDOODLE_CLIENTID,
+//                 clientSecret: process.env.JDOODLE_SECRET,
+//             }
+//             if (language === 'python') {
+//                 program.language = 'python3'
+//             }
  
-            const response = await fetch('https://api.jdoodle.com/v1/execute', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(program),
-            });
+//             const response = await fetch('https://api.jdoodle.com/v1/execute', {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json',
+//                 },
+//                 body: JSON.stringify(program),
+//             });
  
-            if (response.status !== 200) {
-                return next(new ErrorHandler('Compiler error', 400));
-            }
+//             if (response.status !== 200) {
+//                 return next(new ErrorHandler('Compiler error', 400));
+//             }
  
-            const output = await response.json();
-            if (!output.isExecutionSuccess) {
-                return next(new ErrorHandler(output.output.trim(), 400));
-            }
+//             const output = await response.json();
+//             if (!output.isExecutionSuccess) {
+//                 return next(new ErrorHandler(output.output.split(',').slice(1).join(' ').trim(), 400));
+//             }
  
-            results.push({
-                testCaseId: testCase._id,
-                actualResult: output.output,
-                passed: output.output.trim() === testCase.expectedResult.trim(),
-            });
-        }
+//             results.push({
+//                 testCaseId: testCase._id,
+//                 actualResult: output.output,
+//                 passed: output.output.trim() === testCase.expectedResult.trim(),
+//             });
+//         }
  
-        res.status(200).json({
-            success: true,
-            results
-        });
-    } catch (error) {
-        return next(new ErrorHandler(error.message, 400));
-    }
-})
+//         res.status(200).json({
+//             success: true,
+//             results
+//         });
+//     } catch (error) {
+//         return next(new ErrorHandler(error.message, 400));
+//     }
+// })
 
-// test piston
-export const executePiston = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        const {courseId, contentId, code, language} = req.body;
-        const userId = req.user?._id;
+// // test piston
+// export const executePiston = CatchAsyncError(async (req: Request, res: Response, next: NextFunction) => {
+//     try {
+//         const {courseId, contentId, code, language} = req.body;
+//         const userId = req.user?._id;
  
-        const course = await CourseModel.findById(courseId);
-        if (!course) {
-            return next(new ErrorHandler('Course not found', 400));
-        }
+//         const course = await CourseModel.findById(courseId);
+//         if (!course) {
+//             return next(new ErrorHandler('Course not found', 400));
+//         }
  
-        const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
-        if (!content) {
-            return next(new ErrorHandler('Content not found', 400));
-        }
+//         const content = course.courseContent.find((item: any) => item._id.toString() === contentId);
+//         if (!content) {
+//             return next(new ErrorHandler('Content not found', 400));
+//         }
  
-        const testCases = content.questionCode;
-        if (!testCases) {
-            return next(new ErrorHandler('Test case not found', 400));
-        }
+//         const testCases = content.questionCode;
+//         if (!testCases) {
+//             return next(new ErrorHandler('Test case not found', 400));
+//         }
        
-        const results = []
-        for (const testCase of testCases.testCases) {
-            const stdin = testCase.testCase
-            .split('\n')
-            .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
-            .join('\n');
-            const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    language: language,
-                    version: '*', // hoặc phiên bản cụ thể
-                    files: [{ content: code }],
-                    stdin: stdin,
-                    compile_timeout: 10000,
-                    run_timeout: 3000,
-                    compile_memory_limit: -1,
-                    run_memory_limit: -1
-                })
-            });
+//         const results = []
+//         for (const testCase of testCases.testCases) {
+//             const stdin = testCase.testCase
+//             .split('\n')
+//             .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
+//             .join('\n');
+//             const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+//                 method: 'POST',
+//                 headers: {
+//                     'Content-Type': 'application/json'
+//                 },
+//                 body: JSON.stringify({
+//                     language: language,
+//                     version: '*', // hoặc phiên bản cụ thể
+//                     files: [{ content: code }],
+//                     stdin: stdin,
+//                     compile_timeout: 10000,
+//                     run_timeout: 3000,
+//                     compile_memory_limit: -1,
+//                     run_memory_limit: -1
+//                 })
+//             });
 
-            const result = await response.json();
-            console.log(result);
-            console.log('--------------------------')
-            if (result.run.stderr) {
-                return next(new ErrorHandler(result.run.stderr.split(',').slice(1).join(' ').trim(), 400));
-            }
-            results.push({
-                testCaseId: testCase._id,
-                actualResult: result.run.stdout,
-                passed: result.run.stdout.trim() === testCase.expectedResult.trim(),
-            });
-        }
+//             const result = await response.json();
+//             console.log(result);
+//             console.log('--------------------------')
+//             if (result.run.stderr) {
+//                 return next(new ErrorHandler(result.run.stderr.split(',').slice(1).join(' ').trim(), 400));
+//             }
+//             results.push({
+//                 testCaseId: testCase._id,
+//                 actualResult: result.run.stdout,
+//                 passed: result.run.stdout.trim() === testCase.expectedResult.trim(),
+//             });
+//         }
 
-        // thêm results vào codeprogress
-        const codeProgress: ICodeProgress = {
-            codeId: content.questionCode._id as string,
-            status: results.every((result) => result.passed),
-        };
+//         // thêm results vào codeprogress
+//         const codeProgress: ICodeProgress = {
+//             codeId: content.questionCode._id as string,
+//             status: results.every((result) => result.passed),
+//         };
  
-        const progress = await progressModel.findOne({ userId, courseId });
-        if (!progress) {
-            return next(new ErrorHandler('Progress not found', 400));
-        }
+//         const progress = await progressModel.findOne({ userId, courseId });
+//         if (!progress) {
+//             return next(new ErrorHandler('Progress not found', 400));
+//         }
  
-        const lessonProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
-        if (!lessonProgress) {
-            const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
-            const newLesson: any = {
-                contentId: contentId,
-                order: maxOrder + 1,
-                code: codeProgress,
-                isLessonCompleted: codeProgress.status && content.quiz.length == 0 && content.quizSection.length == 0,
-            };
-            progress.lesson.push(newLesson);
-        } else {
-            if (lessonProgress.code) {
-                lessonProgress.code.status = codeProgress.status;
-            }
-            else {
-                lessonProgress.code = codeProgress;
-            }
-            const hasQuiz = content.quiz.length > 0 ? true : false;
-            const isQuizCompleted = (!hasQuiz) || // không có quiz -> true
-                (hasQuiz && lessonProgress.quiz.length != 0) || // có quiz và chưa làm
-                (hasQuiz && lessonProgress.quiz.length == content.quiz.length && lessonProgress.quiz.every(quiz => quiz.status)); // có quiz và đã làm
-            const isQuizSectionCompleted = content.quizSection.length > 0 ? (lessonProgress.isQuizSectionCompleted ? lessonProgress.isQuizSectionCompleted : false) : true;
-            console.log('isQuizCompleted', isQuizCompleted);
-            console.log('isQuizSectionCompleted', isQuizSectionCompleted);
-            lessonProgress.isLessonCompleted = codeProgress.status && isQuizCompleted && isQuizSectionCompleted;
-        }
-        await progress.save();
+//         const lessonProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
+//         if (!lessonProgress) {
+//             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
+//             const newLesson: any = {
+//                 contentId: contentId,
+//                 order: maxOrder + 1,
+//                 code: codeProgress,
+//                 isLessonCompleted: codeProgress.status && content.quiz.length == 0 && content.quizSection.length == 0,
+//             };
+//             progress.lesson.push(newLesson);
+//         } else {
+//             if (lessonProgress.code) {
+//                 lessonProgress.code.status = codeProgress.status;
+//             }
+//             else {
+//                 lessonProgress.code = codeProgress;
+//             }
+//             const hasQuiz = content.quiz.length > 0 ? true : false;
+//             const isQuizCompleted = (!hasQuiz) || // không có quiz -> true
+//                 (hasQuiz && lessonProgress.quiz.length != 0) || // có quiz và chưa làm
+//                 (hasQuiz && lessonProgress.quiz.length == content.quiz.length && lessonProgress.quiz.every(quiz => quiz.status)); // có quiz và đã làm
+//             const isQuizSectionCompleted = content.quizSection.length > 0 ? (lessonProgress.isQuizSectionCompleted ? lessonProgress.isQuizSectionCompleted : false) : true;
+//             console.log('isQuizCompleted', isQuizCompleted);
+//             console.log('isQuizSectionCompleted', isQuizSectionCompleted);
+//             lessonProgress.isLessonCompleted = codeProgress.status && isQuizCompleted && isQuizSectionCompleted;
+//         }
+//         await progress.save();
 
-        res.status(200).json({
-            success: true,
-            results
-        });
-    } catch (error) {
-        return next(new ErrorHandler(error.message, 400));
-    }
-})
+//         res.status(200).json({
+//             success: true,
+//             results
+//         });
+//     } catch (error) {
+//         return next(new ErrorHandler(error.message, 400));
+//     }
+// })

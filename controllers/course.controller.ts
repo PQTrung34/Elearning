@@ -744,7 +744,7 @@ export const reviewQuiz = async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
  
-    return res.status(500).json({ message: "Error processing file", error: error.message });
+    return res.status(400).json({ message: "Error processing file", error: error.message });
   }
 };
 
