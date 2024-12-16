@@ -7,6 +7,7 @@ import userModel from "../models/user.model";
 // create new order
 export const newOrder = CatchAsyncError(async(data: any, res: Response) => {
     const order = await OrderModel.create(data);
+    console.log('Tạo thành công')
     res.status(201).json({
         success: true,
         order,

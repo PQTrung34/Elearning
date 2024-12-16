@@ -101,7 +101,7 @@ export const createPayment = CatchAsyncError(async(req: Request, res: Response, 
     // const redirectUrl = 'https://webhook.site/b3088a6a-2d17-4f8d-a383-71389a6c600b'; // link web
     const redirectUrl = `http://localhost:3000/course/${courseId}`; // link chuyển hướng sau khi thanh toán thành công
     // public locallhost:8000 = ngrok
-    const ipnUrl = 'https://1fe0-171-251-212-26.ngrok-free.app/api/v1/check-payment'; // public localhost = ngrok
+    const ipnUrl = 'https://670f-171-251-212-26.ngrok-free.app/api/v1/check-payment'; // public localhost = ngrok
     const requestType = "payWithMethod";
     const amount = amountInfo;
     const orderId = partnerCode + new Date().getTime();
@@ -283,7 +283,3 @@ export const transactionStatus = CatchAsyncError(async(req: Request, res: Respon
     return next(new ErrorHandler(error.message, 400));
   }
 })
-
-function sendMail(arg0: { email: any; subject: string; template: string; data: { order: { _id: any; name: any; price: any; date: string; }; }; }) {
-  throw new Error('Function not implemented.');
-}

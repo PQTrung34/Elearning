@@ -1,7 +1,6 @@
 import express from 'express';
-import { registrationUser, activateUser, loginUser, logoutUser, updateAccessToken, getUserInfo, socialAuth, updateUserInfo, updateUserPassword, updateProfilePicture, getAllUsersAdmin, updateUserRole, deleteUser } from '../controllers/user.controller';
+import { registrationUser, activateUser, loginUser, logoutUser, updateAccessToken, getUserInfo, socialAuth, updateUserInfo, updateUserPassword, updateProfilePicture, getAllUsersAdmin, updateUserRole, deleteUser, forgotPassword } from '../controllers/user.controller';
 import { authorizeRoles, isAutheticated } from '../middleware/auth';
-import { deleteModel } from 'mongoose';
 const userRouter = express.Router()
 
 userRouter.post('/registration', registrationUser);
@@ -33,5 +32,7 @@ userRouter.get('/get-all-users', getAllUsersAdmin);
 userRouter.put('/update-user-role', updateUserRole);
 
 userRouter.delete('/delete-user/:id', updateAccessToken, isAutheticated, authorizeRoles("admin"), deleteUser);
+
+userRouter.post('/forgot-password', forgotPassword);
 
 export default userRouter;

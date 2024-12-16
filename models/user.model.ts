@@ -19,6 +19,9 @@ export interface IUser extends Document {
     comparePassword: (password: string) => Promise<boolean>;
     SignAccessToken: () => string;
     SignRefreshToken: () => string;
+    temporaryPassword?: string;
+    temporaryPasswordExpiry?: Date;
+    compareTemporaryPassword: (temporaryPassword: string) => Promise<boolean>;
 }
 
 const userSchema: Schema<IUser> = new mongoose.Schema({
@@ -60,6 +63,8 @@ const userSchema: Schema<IUser> = new mongoose.Schema({
             courseId: String
         }
     ],
+    temporaryPassword: { type: String, select: false },
+    temporaryPasswordExpiry: { type: Date, select: false }
 });
 
 // hash password before saving
@@ -88,6 +93,10 @@ userSchema.methods.SignRefreshToken = function() {
 // compare password
 userSchema.methods.comparePassword = async function (enteredPassword:string): Promise<boolean> {
     return await bcrypt.compare(enteredPassword, this.password);
+};
+
+userSchema.methods.compareTemporaryPassword = async function(temporaryPassword: string): Promise<boolean> {
+    return await bcrypt.compare(temporaryPassword, this.temporaryPassword);
 };
 
 const userModel: Model<IUser> = mongoose.model("User", userSchema);

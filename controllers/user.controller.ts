@@ -10,6 +10,7 @@ import { accessTokenOptions, refreshTokenOptions, sendToken } from "../utils/jwt
 import { redis } from "../utils/redis";
 import { getAllUsersService, getUserById, updateUserRoleService } from "../services/user.service";
 import cloudinary from "cloudinary";
+import bcrypt from "bcryptjs";
 
 // register user
 interface IRegistrationBody {
@@ -124,9 +125,20 @@ export const loginUser = CatchAsyncError(async(req: Request, res: Response, next
             return next(new ErrorHandler("Please enter email and password",400));
         };
 
-        const user = await userModel.findOne({email}).select("+password");
+        const user = await userModel.findOne({email}).select("+password +temporaryPassword +temporaryPasswordExpiry");
         if (!user) {
             return next(new ErrorHandler("Invalid email or password",400));
+        }
+
+        if (user.temporaryPassword) {
+            const isTempPasswordMatch = await user.compareTemporaryPassword(password);
+            if (isTempPasswordMatch) {
+                // Check if temporary password is expired
+                if (user.temporaryPasswordExpiry && user.temporaryPasswordExpiry < new Date()) {
+                    return next(new ErrorHandler("Temporary password has expired. Please request a new one.",400));
+                }
+                return sendToken(user, 200, res);
+            }
         }
 
         const isPasswordMatch = await user.comparePassword(password);
@@ -386,6 +398,44 @@ export const deleteUser = CatchAsyncError(async(req: Request, res: Response, nex
             success: true,
             message: "User deleted successfully"
         })
+    } catch (error) {
+        return next(new ErrorHandler(error.message,400));
+    }
+})
+
+export const forgotPassword = CatchAsyncError(async(req: Request, res: Response, next: NextFunction) => {
+    try {
+        const {email} = req.body;
+
+        const user = await userModel.findOne({email});
+        if (!user) {
+            return next(new ErrorHandler('User not found with this email',404));
+        }
+
+        const tempPassword = Math.random().toString(36).slice(-8);
+        const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
+
+        user.temporaryPassword = hashedTempPassword;
+        user.temporaryPasswordExpiry = new Date(Date.now() + 3600000); // 1 hour
+        // user.temporaryPasswordExpiry = new Date(Date.now() + 30000); // 30s
+        await user.save();
+        
+        const data = {tempPassword};
+        
+        try {
+            await sendMail({
+                email: user.email,
+                subject: 'Forgot password',
+                template: 'forgot-password.ejs',
+                data
+            })
+            res.status(200).json({
+                success: true,
+                message: `Please check your email: ${user.email} for temporary password`,
+            });
+        } catch (error:any) {
+            return next(new ErrorHandler(error.message,400))
+        }
     } catch (error) {
         return next(new ErrorHandler(error.message,400));
     }
