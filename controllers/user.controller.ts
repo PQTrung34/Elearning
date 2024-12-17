@@ -125,25 +125,25 @@ export const loginUser = CatchAsyncError(async(req: Request, res: Response, next
             return next(new ErrorHandler("Please enter email and password",400));
         };
 
-        const user = await userModel.findOne({email}).select("+password +temporaryPassword +temporaryPasswordExpiry");
+        const user = await userModel.findOne({email}).select("+password +temporaryPasswordExpiry");
         if (!user) {
             return next(new ErrorHandler("Invalid email or password",400));
         }
 
-        if (user.temporaryPassword) {
-            const isTempPasswordMatch = await user.compareTemporaryPassword(password);
-            if (isTempPasswordMatch) {
-                // Check if temporary password is expired
-                if (user.temporaryPasswordExpiry && user.temporaryPasswordExpiry < new Date()) {
-                    return next(new ErrorHandler("Temporary password has expired. Please request a new one.",400));
-                }
-                return sendToken(user, 200, res);
+        if (!user.temporaryPasswordExpiry) {
+            const isPasswordMatch = await user.comparePassword(password);
+            if (!isPasswordMatch) {
+                return next(new ErrorHandler("Password incorrect",400));
             }
         }
-
-        const isPasswordMatch = await user.comparePassword(password);
-        if (!isPasswordMatch) {
-            return next(new ErrorHandler("Password incorrect",400));
+        else {
+            const isTempPasswordMatch = await user.comparePassword(password);
+            if (!isTempPasswordMatch) {
+                return next(new ErrorHandler("Password incorrect",400));
+            }
+            else if (user.temporaryPasswordExpiry < new Date()) {
+                return next(new ErrorHandler("Temporary password expired",400));
+            }
         }
 
         sendToken(user, 200, res);
@@ -413,9 +413,8 @@ export const forgotPassword = CatchAsyncError(async(req: Request, res: Response,
         }
 
         const tempPassword = Math.random().toString(36).slice(-8);
-        const hashedTempPassword = await bcrypt.hash(tempPassword, 10);
 
-        user.temporaryPassword = hashedTempPassword;
+        user.password = tempPassword;
         user.temporaryPasswordExpiry = new Date(Date.now() + 3600000); // 1 hour
         // user.temporaryPasswordExpiry = new Date(Date.now() + 30000); // 30s
         await user.save();
