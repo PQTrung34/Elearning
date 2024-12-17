@@ -293,7 +293,7 @@ export const updateUserPassword = CatchAsyncError(async(req: Request, res: Respo
             return next(new ErrorHandler("Please enter old and new password",400));
         }
 
-        const user = await userModel.findById(req.user?._id).select("+password");
+        const user = await userModel.findById(req.user?._id).select("+password +temporaryPasswordExpiry");
 
         if (user?.password === undefined) {
             return next(new ErrorHandler("Invalid user",400));
@@ -304,6 +304,9 @@ export const updateUserPassword = CatchAsyncError(async(req: Request, res: Respo
             return next(new ErrorHandler("Invalid old password",400));
         }
 
+        if (user?.temporaryPasswordExpiry) {
+            user.temporaryPasswordExpiry = undefined;
+        }
         user.password = newPassword;
 
         await user.save();
