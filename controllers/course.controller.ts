@@ -15,6 +15,7 @@ import { IQuiz, IQuizSection } from '../models/course.model';
 import fs from 'fs';
 import mammoth from 'mammoth';
 import progressModel from '../models/progress.model';
+import userModel from '../models/user.model';
 
 // upload course
 export const uploadCourse = CatchAsyncError(
@@ -155,12 +156,31 @@ export const getSingleCourse = CatchAsyncError(
       if (!course) {
         return next(new ErrorHandler('Course not found', 404));
       }
+      const fixCourse = course.toObject();
+      if (fixCourse.reviews && fixCourse.reviews.length > 0) {
+        const updatedReviews = await Promise.all(
+          fixCourse.reviews.map(async (review: any) => {
+            if (review.user) {
+              const user = await userModel.findById(review.user._id);
+              return {
+                ...review,
+                user: {
+                  ...review.user,
+                  avatar: user?.avatar || review.user.avatar
+                }
+              };
+            }
+            return review;
+          })
+        );
+        fixCourse.reviews = updatedReviews;
+      }
 
-      await redis.set(courseId, JSON.stringify(course), 'EX', 3600); // Thêm thời gian hết hạn (1 giờ)
+      await redis.set(courseId, JSON.stringify(fixCourse), 'EX', 3600); // Thêm thời gian hết hạn (1 giờ)
 
       res.status(200).json({
         success: true,
-        course,
+        course: fixCourse,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message || 'Internal Server Error', 500));
@@ -463,9 +483,28 @@ export const getReviewInCourse = CatchAsyncError(
     try {
       const { courseId } = req.params;
       const course = await CourseModel.findById(courseId);
+      const courseReviews = course?.reviews;
+      const reviews = await Promise.all(
+        courseReviews.map(async (rev: any) => {
+          if (rev.user) {
+            const user = await userModel.findById(rev.user._id);
+            if (user.avatar) {
+              return {
+                ...rev.toObject(),
+                user: {
+                  ...rev.user,
+                  avatar: user?.avatar || rev.user.avatar
+                }
+              };
+            }
+          }
+          return rev;
+        })
+      );
+
       res.status(200).json({
         success: true,
-        review: course.reviews,
+        review: reviews,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 400));

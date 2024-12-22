@@ -120,9 +120,13 @@ export const editLayout = CatchAsyncError(
 
       if (type === 'Categories') {
         const { categories } = req.body;
-        const catogoriesItem = await LayoutModel.findOne({
+        const categoriesItem = await LayoutModel.findOne({
           type: 'Categories',
         });
+        const duplicateCategories = new Set(categories.map((item: any) => item.title.toLowerCase()));
+        if (duplicateCategories.size !== categories.length) {
+          return next(new ErrorHandler('Category already exist', 400));
+        }
         const categoriesItems = await Promise.all(
           categories.map(async (item: any) => {
             return {
@@ -130,7 +134,8 @@ export const editLayout = CatchAsyncError(
             };
           })
         );
-        await LayoutModel.findByIdAndUpdate(catogoriesItem?._id, {
+        console.log(categoriesItems);
+        await LayoutModel.findByIdAndUpdate(categoriesItem?._id, {
           type: 'Categories',
           categories: categoriesItems,
         });
