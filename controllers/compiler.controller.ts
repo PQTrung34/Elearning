@@ -203,7 +203,12 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     let output = await pistonResponse.json();
                     // lỗi code của piston
                     if (output.run.stderr) {
-                        return next(new ErrorHandler(output.run.stderr.split(',').slice(1).join(' ').trim(), 400));
+                        if (language === 'python') {
+                            return next(new ErrorHandler(output.run.stderr.split(',').slice(1).join(' ').trim(), 400));
+                        }
+                        else if (language === 'cpp') {
+                            return next(new ErrorHandler(output.run.stderr.split(':').slice(3).join(' ').trim(), 400));
+                        }
                     }
                     results.push({
                         testCaseId: testCase._id,
@@ -216,7 +221,12 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     console.log('Chạy vào Jdoodle');
                     // lỗi code của Jdoodle
                     if (!output.isExecutionSuccess) {
-                        return next(new ErrorHandler(output.output.split(',').slice(1).join(' ').trim(), 400));
+                        if (language === 'python') {
+                            return next(new ErrorHandler(output.output.split(',').slice(1).join(' ').trim(), 400));
+                        }
+                        else if (language === 'cpp') {
+                            return next(new ErrorHandler(output.output.split(':').slice(3).join(' ').trim(), 400));
+                        }
                     }
 
                     results.push({
@@ -251,6 +261,9 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     continue;
                 }
                 // lỗi code của Judge0
+                if (output.compile_output) {
+                    return next(new ErrorHandler(Buffer.from(output.compile_output, 'base64').toString().split(':').slice(3).join(' ').trim(), 400));
+                }
                 if (output.stderr) {
                     return next(new ErrorHandler(output.stderr.split(',').slice(1).join(' ').trim(), 400));
                 }
@@ -274,10 +287,13 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
         if (!progress) {
             return next(new ErrorHandler('Progress not found', 400));
         }
- 
+
         const lessonProgress = progress.lesson.find((lesson) => lesson.contentId === contentId);
         if (!lessonProgress) {
             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
+            if (maxOrder === course.courseContent.length) {
+                return next(new ErrorHandler('Maximum order', 400));
+            }
             const newLesson: any = {
                 contentId: contentId,
                 order: maxOrder + 1,

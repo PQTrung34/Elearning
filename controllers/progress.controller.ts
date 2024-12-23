@@ -54,6 +54,9 @@ export const updateProgress = CatchAsyncError(async (req: Request, res: Response
             const code: ICodeProgress = codeId ? { codeId:codeId, status:codeStatus } : undefined;
             // Tìm giá trị order lớn nhất trong lesson để thêm bài học mới
             const maxOrder = progress.lesson.reduce((max, lesson) => Math.max(max, lesson.order), 0) || 0;
+            if (maxOrder === course.courseContent.length) {
+                return next(new ErrorHandler('Maximum order', 400));
+            }
 
             const countQuiz = quizId ? quizStatus ? 1 : 0 : 0;
             const countCode = codeId ? codeStatus ? 1 : 0 : 0;

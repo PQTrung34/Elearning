@@ -103,7 +103,11 @@ export const editLayout = CatchAsyncError(
 
       if (type === 'FAQ') {
         const { faq } = req.body;
-        const FaqItem = await LayoutModel.findOne({ type: 'FAQ' });
+        const faqItem = await LayoutModel.findOne({ type: 'FAQ' });
+        const duplicateFAQ = new Set(faq.map((item: any) => item.question.toLowerCase()));
+        if (duplicateFAQ.size !== faq.length) {
+          return next(new ErrorHandler('FAQ already exist', 400));
+        }
         const faqItems = await Promise.all(
           faq.map(async (item: any) => {
             return {
@@ -112,7 +116,7 @@ export const editLayout = CatchAsyncError(
             };
           })
         );
-        await LayoutModel.findByIdAndUpdate(FaqItem?._id, {
+        await LayoutModel.findByIdAndUpdate(faqItem?._id, {
           type: 'FAQ',
           faq: faqItems,
         });
@@ -134,7 +138,6 @@ export const editLayout = CatchAsyncError(
             };
           })
         );
-        console.log(categoriesItems);
         await LayoutModel.findByIdAndUpdate(categoriesItem?._id, {
           type: 'Categories',
           categories: categoriesItems,
