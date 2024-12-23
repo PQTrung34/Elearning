@@ -241,10 +241,10 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                 console.log('Chạy vào Judge0');
                 const data = await judge0Response.json();
                 const token = data.token;
-                let output
+                let output;
                 const maxAttempts = 10;
                 for (let i = 0; i < maxAttempts; i++) {
-                    const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}`, {
+                    const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}?base64_encoded=true`, {
                         headers: {
                             'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
                             'X-RapidAPI-Key': process.env.RAPID_API_KEY,
