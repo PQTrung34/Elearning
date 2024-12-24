@@ -265,7 +265,7 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
                     return next(new ErrorHandler(Buffer.from(output.compile_output, 'base64').toString().split(':').slice(3).join(' ').trim(), 400));
                 }
                 if (output.stderr) {
-                    return next(new ErrorHandler(output.stderr.split(',').slice(1).join(' ').trim(), 400));
+                    return next(new ErrorHandler(Buffer.from(output.stderr, 'base64').toString().split(',').slice(1).join(' ').trim(), 400));
                 }
 
                 results.push({
