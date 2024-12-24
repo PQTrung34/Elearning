@@ -65,7 +65,7 @@ const userSchema: Schema<IUser> = new mongoose.Schema({
     ],
     temporaryPassword: { type: String, select: false },
     temporaryPasswordExpiry: { type: Date, select: false }
-});
+}, {timestamps: true});
 
 // hash password before saving
 userSchema.pre<IUser>('save', async function(next) {

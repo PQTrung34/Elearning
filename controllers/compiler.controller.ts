@@ -129,8 +129,6 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
             return next(new ErrorHandler('Content not found', 400));
         }
  
-        const languageId = getLanguageId(language);
- 
         const testCases = content.questionCode;
         if (!testCases) {
             return next(new ErrorHandler('Test case not found', 400));
@@ -142,137 +140,81 @@ export const executeTestCases = CatchAsyncError(async (req: Request, res: Respon
             .split('\n')
             .map((line, index) => index === 1 ? line.split(' ').join('\n') : line)
             .join('\n');
-            const judge0Response = await fetch('https://judge0-ce.p.rapidapi.com/submissions', {
+            const program = {
+                script : code,
+                stdin: stdin,
+                language: language,
+                versionIndex: "0",
+                clientId: process.env.JDOODLE_CLIENTID,
+                clientSecret: process.env.JDOODLE_SECRET,
+            }
+            if (language === 'python') {
+                program.language = 'python3';
+            }
+
+            const Jdoodle_response = await fetch('https://api.jdoodle.com/v1/execute', {
                 method: 'POST',
                 headers: {
-                    'content-type': 'application/json',
-                    'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-                    'X-RapidAPI-Key': process.env.RAPID_API_KEY,
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    source_code: code,
-                    language_id: languageId,
-                    // base64_encoded: true,
-                    // stdin: Buffer.from(testCase.testCase).toString('base64'),
-                    stdin: stdin
-                }),
+                body: JSON.stringify(program),
             });
-            if (judge0Response.status === 429) {
-                // Nếu Judge0 limit
-                const program = {
-                    script : code,
-                    stdin: stdin,
-                    language: language,
-                    versionIndex: "0",
-                    clientId: process.env.JDOODLE_CLIENTID,
-                    clientSecret: process.env.JDOODLE_SECRET,
-                }
-                if (language === 'python') {
-                    program.language = 'python3';
-                }
 
-                const Jdoodle_response = await fetch('https://api.jdoodle.com/v1/execute', {
+            let output = await Jdoodle_response.json();
+            if (output.statusCode === 429){
+                // Nếu Jdoodle limit
+                console.log('Chạy vào piston');
+                const pistonResponse = await fetch('https://emkc.org/api/v2/piston/execute', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(program),
+                    body: JSON.stringify({
+                        language: language,
+                        version: '*', // hoặc phiên bản cụ thể
+                        files: [{ content: code }],
+                        stdin: stdin,
+                        compile_timeout: 10000,
+                        run_timeout: 3000,
+                        compile_memory_limit: -1,
+                        run_memory_limit: -1
+                    })
                 });
-
-                let output = await Jdoodle_response.json();
-                if (output.statusCode === 429){
-                    // Nếu Jdoodle limit
-                    console.log('Chạy vào piston');
-                    const pistonResponse = await fetch('https://emkc.org/api/v2/piston/execute', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            language: language,
-                            version: '*', // hoặc phiên bản cụ thể
-                            files: [{ content: code }],
-                            stdin: stdin,
-                            compile_timeout: 10000,
-                            run_timeout: 3000,
-                            compile_memory_limit: -1,
-                            run_memory_limit: -1
-                        })
-                    });
-        
-                    let output = await pistonResponse.json();
-                    // lỗi code của piston
-                    if (output.run.stderr) {
-                        if (language === 'python') {
-                            return next(new ErrorHandler(output.run.stderr.split(',').slice(1).join(' ').trim(), 400));
-                        }
-                        else if (language === 'cpp') {
-                            return next(new ErrorHandler(output.run.stderr.split(':').slice(3).join(' ').trim(), 400));
-                        }
+    
+                let output = await pistonResponse.json();
+                // lỗi code của piston
+                if (output.run.stderr) {
+                    if (language === 'python') {
+                        return next(new ErrorHandler(output.run.stderr.split(',').slice(1).join(' ').trim(), 400));
                     }
-                    results.push({
-                        testCaseId: testCase._id,
-                        testCase: testCase.testCase,
-                        actualResult: output.run.stdout,
-                        passed: output.run.stdout.trim() === testCase.expectedResult.trim(),
-                    });
-                }
-                else {
-                    console.log('Chạy vào Jdoodle');
-                    // lỗi code của Jdoodle
-                    if (!output.isExecutionSuccess) {
-                        if (language === 'python') {
-                            return next(new ErrorHandler(output.output.split(',').slice(1).join(' ').trim(), 400));
-                        }
-                        else if (language === 'cpp') {
-                            return next(new ErrorHandler(output.output.split(':').slice(3).join(' ').trim(), 400));
-                        }
+                    else if (language === 'cpp') {
+                        return next(new ErrorHandler(output.run.stderr.split(':').slice(3).join(' ').trim(), 400));
                     }
-
-                    results.push({
-                        testCaseId: testCase._id,
-                        testCase: testCase.testCase,
-                        actualResult: output.output,
-                        passed: output.output.trim() === testCase.expectedResult.trim(),
-                    });
                 }
-
-            } else {
-                console.log('Chạy vào Judge0');
-                const data = await judge0Response.json();
-                const token = data.token;
-                let output;
-                const maxAttempts = 10;
-                for (let i = 0; i < maxAttempts; i++) {
-                    const resultResponse = await fetch(`https://judge0-ce.p.rapidapi.com/submissions/${token}?base64_encoded=true`, {
-                        headers: {
-                            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com',
-                            'X-RapidAPI-Key': process.env.RAPID_API_KEY,
-                        },
-                    });
- 
-                    output = await resultResponse.json();
-                    if (output.status.id > 2) break;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
- 
-                if (!output) {
-                    results.push({ testCase: testCases.testCases, error: 'Timeout' });
-                    continue;
-                }
-                // lỗi code của Judge0
-                if (output.compile_output) {
-                    return next(new ErrorHandler(Buffer.from(output.compile_output, 'base64').toString().split(':').slice(3).join(' ').trim(), 400));
-                }
-                if (output.stderr) {
-                    return next(new ErrorHandler(Buffer.from(output.stderr, 'base64').toString().split(',').slice(1).join(' ').trim(), 400));
+                results.push({
+                    testCaseId: testCase._id,
+                    testCase: testCase.testCase,
+                    actualResult: output.run.stdout,
+                    passed: output.run.stdout.trim() === testCase.expectedResult.trim(),
+                });
+            }
+            else {
+                console.log('Chạy vào Jdoodle');
+                // lỗi code của Jdoodle
+                if (!output.isExecutionSuccess) {
+                    if (language === 'python') {
+                        return next(new ErrorHandler(output.output.split(',').slice(1).join(' ').trim(), 400));
+                    }
+                    else if (language === 'cpp') {
+                        return next(new ErrorHandler(output.output.split(':').slice(3).join(' ').trim(), 400));
+                    }
                 }
 
                 results.push({
                     testCaseId: testCase._id,
                     testCase: testCase.testCase,
-                    actualResult: output.stdout,
-                    passed: output.stdout.trim() === testCase.expectedResult.trim(),
+                    actualResult: output.output,
+                    passed: output.output.trim() === testCase.expectedResult.trim(),
                 });
             }
         }
