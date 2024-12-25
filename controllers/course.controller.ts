@@ -23,6 +23,11 @@ export const uploadCourse = CatchAsyncError(
     try {
       const data = req.body;
       const thumbnail = data.thumbnail;
+      const name = data.name;
+      const courseExist = await CourseModel.findOne({ name });
+      if (courseExist) {
+        return next(new ErrorHandler("Course name already exist", 400));
+      }
       if (thumbnail) {
         const myCloud = await cloudinary.v2.uploader.upload(thumbnail, {
           folder: 'courses',
@@ -70,7 +75,6 @@ export const editCourse = CatchAsyncError(
     try {
       const data = req.body;
       const thumbnail = data.thumbnail;
- 
       if (thumbnail) {
         if (thumbnail.public_id) {
           await cloudinary.v2.uploader.destroy(thumbnail.public_id);
@@ -118,6 +122,16 @@ export const editCourse = CatchAsyncError(
       });
       data.courseContent = Array.from(sectionMap.values()).flat();
       const courseId = req.params.id;
+      if (data.name) {
+        const existingCourse = await CourseModel.findOne({
+          name: data.name,
+          _id: { $ne: courseId } // Exclude current course from check
+        });
+
+        if (existingCourse) {
+          return next(new ErrorHandler("Course name already exists", 400));
+        }
+      }
       const course = await CourseModel.findByIdAndUpdate(
         courseId,
         {
